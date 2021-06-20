@@ -1,4 +1,5 @@
 import os
+import argparse
 from helpers import Helper
 from wrapper import NuBankWrapper
 from sqlalchemy import create_engine
@@ -6,19 +7,26 @@ from sqlalchemy.orm import sessionmaker
 from getpass import getpass
 from models import Base
 
-# Create a .env config file
-config_file = 'env.json'
+# Argument parsing
+parser = argparse.ArgumentParser()
+parser.add_argument('--reset_database', metavar='reset_database', type=bool, default=False)
+parser.add_argument('--from_cache', metavar='from_cache', type=bool, default=False)
+parser.add_argument('--mock', metavar='mock', type=bool, default=False)
 
-# This script uses the token and certificate authentication
+args, remaining = parser.parse_known_args()
+
+# Json .env file configuration
+config_file = 'env.json'
 config = Helper.load_json_config(config_file)
 mysql_config = config['mysqlConfig']
 
+# MySQL Connection String
 engine = create_engine(
     f"mysql+mysqlconnector://{mysql_config['user']}:{mysql_config['password']}@{mysql_config['host']}:{mysql_config['port']}/{mysql_config['database']}")
 
 for user in config['users']:
 
-    nu = NuBankWrapper(mock=False, data_dir=config['cachedir'])
+    nu = NuBankWrapper(mock=args.mock, data_dir=config['cachedir'])
     Session = sessionmaker(bind=engine)
     global_session = Session()
 
@@ -54,14 +62,13 @@ for user in config['users']:
             print('Sorry! We need the token to proceed')
             break
 
-    nu.authenticate_with_token_string(user['token'])
+    if not args.from_cache:
+        nu.authenticate_with_token_string(user['token'])
+        nu.get_card_bills(details = True, savefile = True)
 
-    nu.get_card_bills(details = True, savefile = True)
-
-    # Uncomment this line to drop the database
-    # Base.metadata.drop_all(engine)
-    # Uncomment this line to create the database
-    # Base.metadata.create_all(engine)
+    if args.reset_database:
+        Base.metadata.drop_all(engine)
+        Base.metadata.create_all(engine)
 
     card_bills = nu.retrieve_card_bill_from_cache()
 
