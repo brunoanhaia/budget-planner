@@ -1,0 +1,9 @@
+/.vs
+/.vscode
+/.idea
+/__pycache__
+/cache
+/env
+**env.json
+**.p12
+**.token
