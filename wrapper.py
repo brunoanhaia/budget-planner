@@ -1,19 +1,21 @@
 import os
 import json
+import cert_generator
 from pynubank import Nubank, MockHttpClient
 from datetime import datetime
-from certificate_generator_script import CertificateGenerator
+
+from sqlalchemy.sql.sqltypes import String
 
 
 class NuBankWrapper:
-    data_dir = 'data'
 
-    def __init__(self, cpf="", password="", mock: bool = True):
+    def __init__(self, cpf="", password="", mock: bool = True, data_dir: String = 'cache'):
         self.mock = mock
         self.user = cpf
         self.password = password
         self.bills: any
         self.refresh_token: any
+        self.data_dir = data_dir
 
         if (mock):
             self.nu = Nubank(MockHttpClient())
@@ -33,7 +35,8 @@ class NuBankWrapper:
         self.refresh_token = self.nu.authenticate_with_cert(
             self.user, self.password, self._get_cert_path())
 
-        self.save_to_file(f'{self._get_prefix_user()}', self.refresh_token, format='token')
+        self.save_to_file(f'{self._get_prefix_user()}',
+                          self.refresh_token, format='token')
 
         return self.refresh_token
 
@@ -44,6 +47,10 @@ class NuBankWrapper:
             refresh_token = json.load(refresh_file)
             cert_path = self._get_cert_path()
             return self.nu.authenticate_with_refresh_token(refresh_token, cert_path)
+
+    def authenticate_with_token_string(self, token: String):
+        cert_path = self._get_cert_path()
+        return self.nu.authenticate_with_refresh_token(token, cert_path)
 
     def get_account_balance(self):
         return self.nu.get_account_balance()
@@ -62,12 +69,13 @@ class NuBankWrapper:
         return account_statements
 
     def save_to_file(self, file_name, content, format='json'):
-        dirname = os.path.dirname(file_name)
+        dirname = os.path.dirname(os.path.join(self.data_dir, file_name))
+        name = f'{os.path.basename(file_name)}.{format}'
 
         if os.path.exists(dirname) == False:
             os.makedirs(dirname)
 
-        with open('{name}.{format}'.format(name=file_name, format=format), 'w+', encoding='utf-8') as outfile:
+        with open(os.path.join(dirname, name), 'w+', encoding='utf-8') as outfile:
             json.dump(content, outfile, ensure_ascii=False, indent='\t')
 
     def get_card_bills(self, details: bool, savefile: bool = False):
@@ -92,7 +100,7 @@ class NuBankWrapper:
         return self.bills
 
     def retrieve_card_bill_from_cache(self) -> list[dict]:
-        base_path = f'{self.user}/card_bills'
+        base_path = os.path.join(self.data_dir, self.user, 'card_bills')
         files_list = os.listdir(base_path)
         card_bills_list = []
 
@@ -100,19 +108,19 @@ class NuBankWrapper:
             with open(os.path.join(base_path, file), 'r', encoding='utf8') as f:
                 file_content = json.load(f)
                 card_bill = {
-                    'nubank_id' : file_content.get('id', None),
-                    'cpf' : self.user,
-                    'due_date' : file_content['summary'].get('due_date', None),
-                    'close_date' : file_content['summary'].get('close_date', None),
-                    'past_balance' : file_content['summary'].get('past_balance', None),
-                    'effective_due_date' : file_content['summary'].get('effective_due_date', None),
-                    'total_balance' : file_content['summary'].get('total_balance', None),
-                    'interest_rate' : file_content['summary'].get('interest_rate', None),
-                    'interest' : file_content['summary'].get('interest', None),
-                    'total_cumulative' : file_content['summary'].get('total_cumulative', None),
-                    'paid' : file_content['summary'].get('paid', None),
-                    'minimum_payment' : file_content['summary'].get('minimum_payment', None),
-                    'open_date' : file_content['summary'].get('open_date', None),
+                    'nubank_id': file_content.get('id', None),
+                    'cpf': self.user,
+                    'due_date': file_content['summary'].get('due_date', None),
+                    'close_date': file_content['summary'].get('close_date', None),
+                    'past_balance': file_content['summary'].get('past_balance', None),
+                    'effective_due_date': file_content['summary'].get('effective_due_date', None),
+                    'total_balance': file_content['summary'].get('total_balance', None),
+                    'interest_rate': file_content['summary'].get('interest_rate', None),
+                    'interest': file_content['summary'].get('interest', None),
+                    'total_cumulative': file_content['summary'].get('total_cumulative', None),
+                    'paid': file_content['summary'].get('paid', None),
+                    'minimum_payment': file_content['summary'].get('minimum_payment', None),
+                    'open_date': file_content['summary'].get('open_date', None),
                 }
 
                 if '_links' in file_content and 'self' in file_content['_links'] and 'href' in file_content['_links']['self']:
@@ -122,16 +130,16 @@ class NuBankWrapper:
 
                     for t in file_content['details']:
                         transaction = {
-                            'nubank_id' : t['id'],
-                            'category' : t.get('category', None),
-                            'amount' : t.get('amount', None),
-                            'transaction_id' : t.get('transaction_id', None),
-                            'index' : t.get('index', None),
-                            'charges' : t.get('charges', None),
-                            'type' : t.get('type', None),
-                            'title' : t.get('title', None),
-                            'href' : t.get('href', None),
-                            'post_date' : t.get('post_date', None),
+                            'nubank_id': t['id'],
+                            'category': t.get('category', None),
+                            'amount': t.get('amount', None),
+                            'transaction_id': t.get('transaction_id', None),
+                            'index': t.get('index', None),
+                            'charges': t.get('charges', None),
+                            'type': t.get('type', None),
+                            'title': t.get('title', None),
+                            'href': t.get('href', None),
+                            'post_date': t.get('post_date', None),
                         }
 
                         if 'transactions' not in card_bill:
@@ -143,10 +151,10 @@ class NuBankWrapper:
         return card_bills_list
 
     def _get_cert_path(self):
-        return "./{}_cert.p12".format(self.user)
+        return os.path.join(self.data_dir, self.user, f'{self.user}_cert.p12')
 
     def _get_prefix_user(self):
-        return "{}".format(self.user)
+        return f'{self.user}'
 
-    def generate_cert(self, save_file = True):
-        CertificateGenerator.run(self.cpf, self.password, save_file=save_file)
+    def generate_cert(self, save_file=True):
+        cert_generator.run(self.cpf, self.password, save_file=save_file)

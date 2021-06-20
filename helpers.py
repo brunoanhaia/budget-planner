@@ -4,10 +4,11 @@ from sqlalchemy.sql.elements import BooleanClauseList
 from sqlalchemy.sql.sqltypes import Integer, String
 from models import NuBankCardBill, NubankCardTransaction
 
+
 class Helper:
 
     @staticmethod
-    def update_all_attributes(base_class, base, current, skip_fields = []):
+    def update_all_attributes(base_class, base, current, skip_fields=[]):
         attr_list = base_class.__table__.columns.keys()
         for k in attr_list:
             if k != 'id' and k not in skip_fields:
@@ -17,18 +18,20 @@ class Helper:
 
     @staticmethod
     def sync_card_transactions(session, current_transactions: list[dict], bill_id: Integer):
-        base_transactions = session.query(NubankCardTransaction).where(NubankCardTransaction.card_bill_id == bill_id).all()
+        base_transactions = session.query(NubankCardTransaction).where(
+            NubankCardTransaction.card_bill_id == bill_id).all()
 
         # Here we could check the if the base transactions exists in the current transations, otherwise the transaction
         # should be deleted.
         for base_transaction in base_transactions:
-            query_result = [x for x in current_transactions if x['nubank_id'] == base_transaction.nubank_id]
+            query_result = [
+                x for x in current_transactions if x['nubank_id'] == base_transaction.nubank_id]
             if len(query_result) == 0:
                 session.delete(base_transaction)
-                session.commit()
 
         for transaction in current_transactions:
-            query_result = [x for x in base_transactions if x.nubank_id == transaction['nubank_id']]
+            query_result = [
+                x for x in base_transactions if x.nubank_id == transaction['nubank_id']]
 
             current_transaction = NubankCardTransaction().from_dict(transaction)
 
@@ -37,47 +40,51 @@ class Helper:
                 current_transaction.card_bill_id = bill_id
 
                 session.add(current_transaction)
-                session.commit()
-            
+
             # If the transaction exist and should be updated
             else:
-                Helper.update_all_attributes(NubankCardTransaction, query_result[0], current_transaction, ['nubank_id', 'card_bill_id'])
+                Helper.update_all_attributes(NubankCardTransaction, query_result[0], current_transaction, [
+                                             'nubank_id', 'card_bill_id'])
                 session.add(query_result[0])
-                session.commit()
 
     @staticmethod
     def update_database_card_bills(session: sessionmaker, values: list[dict]) -> BooleanClauseList:
         base_bills = session.query(NuBankCardBill).all()
 
         for current_value in values:
-            
-            # This get the transaction if exists 
-            query_result = [x for x in base_bills if x.close_date == current_value['close_date'] and x.cpf == current_value['cpf']]
+
+            # This get the transaction if exists
+            query_result = [x for x in base_bills if x.close_date ==
+                            current_value['close_date'] and x.cpf == current_value['cpf']]
             current_bill = NuBankCardBill().from_dict(current_value)
 
             if len(query_result) > 0:
 
                 base_bill: NuBankCardBill = query_result[0]
 
-                Helper.update_all_attributes(NuBankCardBill, base_bill, current_bill)
+                Helper.update_all_attributes(
+                    NuBankCardBill, base_bill, current_bill)
                 session.add(base_bill)
-                session.commit()
 
-                Helper.sync_card_transactions(session, current_value['transactions'], base_bill.id)
+                if 'transactions' in current_value:
+                    Helper.sync_card_transactions(
+                        session, current_value['transactions'], base_bill.id)
+
+                print(f'{base_bill.close_date} has been updated')
 
             else:
                 session.add(current_bill)
                 print(f'{current_bill.nubank_id} has been added')
-                session.commit()
-    
+
+        session.commit()
+
     @staticmethod
     def load_json_config(path: String):
         with open(path) as f:
             config = json.load(f)
             return config
-    
+
     @staticmethod
     def save_json_config(path: String, json_content: dict):
         with open(path, 'w+', encoding='utf-8') as outfile:
             json.dump(json_content, outfile, ensure_ascii=False, indent='\t')
-
