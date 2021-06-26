@@ -1,7 +1,8 @@
+import json
 import os
 import argparse
 from helpers import Helper
-from wrapper import NuBankWrapper
+from wrapper.nubank import NuBankWrapper
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from getpass import getpass
@@ -64,12 +65,19 @@ for user in config['users']:
 
     if not args.from_cache:
         nu.authenticate_with_token_string(user['token'])
+        nu.get_account_feed()
+        nu.get_account_statements()
+        nu.get_card_statements()
+        nu.get_card_feed()
         nu.get_card_bills(details = True, savefile = True)
 
     if args.reset_database:
         Base.metadata.drop_all(engine)
         Base.metadata.create_all(engine)
 
-    card_bills = nu.retrieve_card_bill_from_cache()
 
-    Helper.update_database_card_bills(global_session, card_bills)
+    nu.generate_monthly_account_summary()
+
+    # card_bills = nu.retrieve_card_bill_from_cache()
+
+    # Helper.update_database_card_bills(global_session, card_bills)

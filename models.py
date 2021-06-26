@@ -1,9 +1,9 @@
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, DECIMAL
 from sqlalchemy.sql.expression import true
 from sqlalchemy.sql.schema import ForeignKey
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import Float
+from sqlalchemy.sql.sqltypes import Date, Float
 
 
 Base = declarative_base()
@@ -17,14 +17,14 @@ class NuBankCardBill(Base):
     state = Column(String(255))
     due_date = Column(String(255))
     close_date = Column(String(255))
-    past_balance = Column(Integer)
+    past_balance = Column(DECIMAL(10, 4))
     effective_due_date = Column(String(255))
-    total_balance = Column(String(255))
+    total_balance = Column(DECIMAL(10, 4))
     interest_rate = Column(Float)
     interest = Column(Float)
-    total_cumulative = Column(String(255))
-    paid = Column(Integer)
-    minimum_payment = Column(Integer)
+    total_cumulative = Column(DECIMAL(10, 4))
+    paid = Column(DECIMAL(10, 4))
+    minimum_payment = Column(DECIMAL(10, 4))
     open_date = Column(String(255))
     link_href = Column(String(255))
     transactions = relationship("NubankCardTransaction", backref="card_bill", lazy=True)
@@ -60,8 +60,9 @@ class NubankCardTransaction(Base):
 
     id = Column((Integer), primary_key=True, autoincrement=True)
     card_bill_id = Column(Integer, ForeignKey('card_bill.id'))
+    state=Column(String(255))
     category = Column(String(255))
-    amount = Column(Integer)
+    amount = Column(DECIMAL(10, 4))
     transaction_id = Column(String(255))
     index = Column(Integer, default=0)
     charges = Column(Integer, default=0)
@@ -74,6 +75,7 @@ class NubankCardTransaction(Base):
     def from_dict(self, values: dict):
         self.id = values.get('id', None)
         self.card_bill_id = values.get('card_bill_id', None)
+        self.state = values.get('state')
         self.category = values['category']
         self.amount = values['amount']
         self.transaction_id = values['transaction_id']
@@ -86,3 +88,17 @@ class NubankCardTransaction(Base):
         self.post_date = values['post_date']
 
         return self
+
+class NuBankMonthlyAccountSummary(Base):
+    __tablename__ = 'monthly_account_summary'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    ref_date = Column(Date)
+    debit = Column(Float)
+    credit = Column(Float)
+    total = Column(Float)
+
+    def from_dict(self, values: dict):
+        self.id = values.get('id', None)
+        self.credit = values.get('credit', 0)
+        self.debit = values.get('debit', 0)
+        self.total = values.get('total', 0)
