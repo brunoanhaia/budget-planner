@@ -1,12 +1,8 @@
-import json
 import os
 import argparse
-from helpers import Helper
-from wrapper.nubank import NuBankWrapper
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from wrapper import NuBankWrapper, ConfigLoader
+
 from getpass import getpass
-from models import Base
 
 # Argument parsing
 parser = argparse.ArgumentParser()
@@ -18,18 +14,12 @@ args, remaining = parser.parse_known_args()
 
 # Json .env file configuration
 config_file = 'env.json'
-config = Helper.load_json_config(config_file)
-mysql_config = config['mysqlConfig']
-
-# MySQL Connection String
-engine = create_engine(
-    f"mysql+mysqlconnector://{mysql_config['user']}:{mysql_config['password']}@{mysql_config['host']}:{mysql_config['port']}/{mysql_config['database']}")
+os.environ['CONFIG_FILE'] = config_file
+config = ConfigLoader.load(os.getenv("CONFIG_FILE"))
 
 for user in config['users']:
 
     nu = NuBankWrapper(mock=args.mock, data_dir=config['cachedir'])
-    Session = sessionmaker(bind=engine)
-    global_session = Session()
 
     if 'cpf' not in user:
         print('Please insert the CPF property on the user field')
@@ -58,7 +48,7 @@ for user in config['users']:
         if option == 'Y':
             refresh_token = nu.authenticate_with_certificate()
             user['token'] = refresh_token
-            Helper.save_json_config(config_file, config)
+            ConfigLoader.save(config_file, config)
         else:
             print('Sorry! We need the token to proceed')
             break
@@ -69,15 +59,11 @@ for user in config['users']:
         nu.get_account_statements()
         nu.get_card_statements()
         nu.get_card_feed()
-        nu.get_card_bills(details = True, savefile = True)
+        nu.retrieve_card_bill_from_cache()
+        # nu.get_card_bills(details=True, save_file=True)
+        nu.generate_monthly_account_summary()
 
     if args.reset_database:
-        Base.metadata.drop_all(engine)
-        Base.metadata.create_all(engine)
+        nu.database_manager.reset()
 
-
-    nu.generate_monthly_account_summary()
-
-    # card_bills = nu.retrieve_card_bill_from_cache()
-
-    # Helper.update_database_card_bills(global_session, card_bills)
+    nu.sync()

@@ -10,6 +10,7 @@ CARD_BILL_FOLDER = 'card_bill'
 CERTIFICATE_SUFFIX = '_cert.p12'
 TOKEN_SUFFIX = '.token'
 
+
 @dataclass()
 class FilePath:
 
@@ -17,21 +18,21 @@ class FilePath:
         self.path: str = path
         self.__is_folder: bool = is_folder
         self.files = self._get_files()
-    
-    def _get_files(self) -> list[str]:
 
+    def _get_files(self) -> list[str]:
         if self.__is_folder and os.path.exists(self.path):
             return os.listdir(self.path)
-    
+
     def get_custom_path(self, custom_string: str) -> str:
         return os.path.join(self.path, custom_string)
 
+
 @dataclass()
-class FileHelper():
-    
-    def __init__(self, user: str, cachedir: str = 'cache') -> None:
+class FileHelper:
+
+    def __init__(self, user: str, cache_dir: str = 'cache') -> None:
         self.user = user
-        self.cachedir = cachedir
+        self.cache_dir = cache_dir
         self.account_feed = FilePath(self.from_base_dir(ACCOUNT_FEED))
         self.account_statement = FilePath(self.from_base_dir(ACCOUNT_STATEMENT_FILE))
         self.account_statement_summary = FilePath(self.from_base_dir(ACCOUNT_STATEMENT_SUMMARY_FILE))
@@ -40,6 +41,6 @@ class FileHelper():
         self.card_bill = FilePath(self.from_base_dir(CARD_BILL_FOLDER), True)
         self.certificate = FilePath(self.from_base_dir(os.path.join(self.user + CERTIFICATE_SUFFIX)))
         self.token = FilePath(self.from_base_dir(os.path.join(self.user + TOKEN_SUFFIX)))
-    
+
     def from_base_dir(self, path: str):
-        return os.path.join(self.cachedir, self.user, path)
+        return os.path.join(self.cache_dir, self.user, path)

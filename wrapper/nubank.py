@@ -1,43 +1,43 @@
-import os
 import json
-from wrapper.file_helper import FileHelper
+import os
 import cert_generator
 import pandas as pd
-from pynubank import Nubank, MockHttpClient
-from datetime import datetime
-from dataclasses import dataclass
 
-from sqlalchemy.sql.sqltypes import Boolean, String
+from datetime import datetime
+from pandas.core.frame import DataFrame
+from pynubank import MockHttpClient, Nubank
+from wrapper.file_helper import FileHelper
+from .database_manager import DatabaseManager
 
 
 class NuBankWrapper:
 
-    def __init__(self, cpf="", password="", mock: bool = True, data_dir: String = 'cache'):
+    def __init__(self, cpf="", password="", mock: bool = True, data_dir: str = 'cache'):
         self.mock = mock
         self.user = cpf
         self.file_helper = FileHelper(self.user)
+        self.database_manager = DatabaseManager
         self.password = password
-        self.bills: any
-        self.account_statements: any
-        self.refresh_token: any
+        self.cached_data = {}
+        self.refresh_token: str = ''
         self.data_dir = data_dir
 
-        if (mock):
+        if mock:
             self.nu = Nubank(MockHttpClient())
         else:
             self.nu = Nubank()
-    
+
     @property
     def user(self):
         return self._user
-    
+
     @user.setter
     def user(self, value):
         self._user = value
         self.file_helper = FileHelper(self._user)
 
     def authenticate_with_qr_code(self):
-        if (self.mock):
+        if self.mock:
             return self.nu.authenticate_with_qr_code(self.user, self.password, "qualquer-coisa")
         else:
             uuid, qr_code = self.nu.get_qr_code()
@@ -46,11 +46,14 @@ class NuBankWrapper:
             return self.nu.authenticate_with_qr_code(self.user, self.password, uuid)
 
     def authenticate_with_certificate(self):
+        if self.password is None or self.password == '':
+            self.password = input("Please insert your password: ")
+
         self.refresh_token = self.nu.authenticate_with_cert(
             self.user, self.password, self.file_helper.certificate.path)
 
         self.save_to_file(self.file_helper.token.path,
-                          self.refresh_token, format=None)
+                          self.refresh_token, file_format='')
 
         return self.refresh_token
 
@@ -62,32 +65,31 @@ class NuBankWrapper:
 
             return self.nu.authenticate_with_refresh_token(refresh_token, cert_path)
 
-    def authenticate_with_token_string(self, token: String):
+    def authenticate_with_token_string(self, token: str):
         cert_path = self.file_helper.certificate.path
         return self.nu.authenticate_with_refresh_token(token, cert_path)
 
     def get_account_balance(self):
         return self.nu.get_account_balance()
 
-    def get_account_statements(self, savefile: bool = False):
-        self.account_statements = self.nu.get_account_statements()
+    def get_account_statements(self, save_file: bool = False):
+        self.cached_data['account_statements'] = self.nu.get_account_statements()
 
-        if savefile:
+        if save_file:
             current_date = datetime.now()
-            # folder_path = self._get_base_path("account_statements")
             file_path = self.file_helper.account_statement.get_custom_path(
                 current_date.strftime("%Y-%m-%d_%H-%M-%S"))
 
-            self.save_to_file(file_path, self.account_statements)
+            self.save_to_file(file_path, self.cached_data['account_statements'])
 
-        return self.account_statements
+        return self.cached_data['account_statements']
 
-    def get_card_bills(self, details: bool, savefile: bool = False):
-        self.bills = self.nu.get_bills()
-        for bill in self.bills:
+    def get_card_bills(self, details: bool, save_file: bool = False):
+        bills = self.nu.get_bills()
+        for bill in bills:
 
-            # This will get the bill datails (transactions) from open and closed bills
-            if (details and bill['state'] != 'future'):
+            # Retrieving the bill details (transactions) from open and closed bills
+            if details and bill['state'] != 'future':
                 bill_detais = self.nu.get_bill_details(bill)['bill']
                 bill['details'] = bill_detais['line_items']
 
@@ -96,14 +98,19 @@ class NuBankWrapper:
 
             if 'summary' in bill:
                 summary = bill['summary']
-                # By default, nubank api provide the values as integers, so we need to convert to divide by 100.
+
+                # By default, nubank api provide the values as integers, so we need to convert and divide the value
+                # by 100.
                 summary['past_balance'] = summary['past_balance']/100
                 summary['total_balance'] = summary['total_balance']/100
                 summary['total_cumulative'] = summary['total_cumulative']/100
                 summary['paid'] = summary['paid']/100
                 summary['minimum_payment'] = summary['minimum_payment']/100
 
-            if savefile:
+            # Storing the data in the class instance for future use
+            self.cached_data['card_bills'] = bills
+
+            if save_file:
                 close_date = datetime.strptime(
                     bill['summary']['close_date'], "%Y-%m-%d")
                 # folder_path =  self._get_base_path("card_bills")
@@ -112,11 +119,11 @@ class NuBankWrapper:
 
                 self.save_to_file(file_path, bill)
 
-        return self.bills
+        return bills
 
     def retrieve_card_bill_from_cache(self) -> list[dict]:
         base_path = self.file_helper.card_bill.path
-        files_list = self.file_helper.card_bill._get_files()
+        files_list = self.file_helper.card_bill.files
         card_bills_list = []
 
         for file in files_list:
@@ -139,7 +146,8 @@ class NuBankWrapper:
                     'open_date': file_content['summary'].get('open_date', None),
                 }
 
-                if '_links' in file_content and 'self' in file_content['_links'] and 'href' in file_content['_links']['self']:
+                if '_links' in file_content \
+                        and 'self' in file_content['_links'] and 'href' in file_content['_links']['self']:
                     card_bill['link_href'] = file_content['_links']['self']['href']
 
                 if 'details' in file_content:
@@ -164,7 +172,9 @@ class NuBankWrapper:
 
                 card_bills_list.append(card_bill)
 
-        return card_bills_list
+        self.cached_data['card_bills'] = card_bills_list
+
+        return self.cached_data['card_bills']
 
     def get_card_statements(self):
         card_statements = self.nu.get_card_statements()
@@ -184,55 +194,66 @@ class NuBankWrapper:
         return card_feed
 
     def get_account_feed(self):
-        account_feed = self.nu.get_account_feed()
-        self.save_to_file(self.file_helper.account_feed.path, account_feed)
+        self.cached_data['account_feed'] = self.nu.get_account_feed()
+        self.save_to_file(self.file_helper.account_feed.path,
+                          self.cached_data['account_feed'])
 
-        return account_feed
+        return self.cached_data['account_feed']
 
     def generate_monthly_account_summary(self) -> dict:
-        if self.account_statements == None:
-            self.get_account_statements()
-        
-        values = self.account_statements
+        # It will retrieve new account statements if it wasn't retrieved before.
+        if self.cached_data['account_statements'] is None:
+            self.get_account_statements(save_file=True)
 
+        values = self.cached_data['account_statements']
+
+        # Still not sure why, but i cannot access __typename directly with pandas, so I'm changing it to type only
         for v in values:
             v['type'] = v['__typename']
 
         df = pd.DataFrame.from_dict(values)
-        df['postDate'] = pd.to_datetime(df['postDate'], format='%Y-%m-%d')
+
+        # Transforming string to datetime for easy grouping
+        df['post_date'] = pd.to_datetime(df['postDate'], format='%Y-%m-%d')
         df.loc[df.type == 'TransferInEvent', "credito"] = df.amount
         df.loc[df.type != 'TransferInEvent', "debito"] = df.amount
 
-        resampled_data = df.resample('MS', on='postDate').agg(
+        # Resampling data and grouping by post_date
+        rdf: DataFrame = df.resample('MS', on='post_date').agg(
             {'credito': 'sum', 'debito': 'sum'})
-        resampled_data['saldo'] = resampled_data.credito - \
-            resampled_data.debito
+        rdf['saldo'] = rdf.credito - rdf.debito
 
-        print(resampled_data)
-        resampled_data = resampled_data.reset_index()
+        # Rounding everything with 2 decimal places
+        rdf = rdf.round(2)
 
-        print(resampled_data)
+        # Transforming the post_date index back to column and to the appropriate format
+        rdf.reset_index(inplace=True)
+        rdf['post_date'] = rdf["post_date"].dt.strftime("%Y-%m-%d")
 
-        account_statement_summary = resampled_data.to_json(
-            date_format='iso', orient='records')
+        # Converting dataframe to dictionary
+        account_statement_summary = rdf.to_dict(orient='records')
 
         file_path = self.file_helper.account_statement_summary.path
         self.save_to_file(file_path, account_statement_summary)
 
         return account_statement_summary
 
-    def save_to_file(self, file_name, content, format='json'):
+    @staticmethod
+    def save_to_file(file_name, content, file_format: str = 'json'):
         dirname = os.path.dirname(file_name)
-        name = f'{os.path.basename(file_name)}'
+        name = os.path.basename(file_name)
 
-        if format != None:
-            name = f'{name}.{format}'
+        if file_format != '':
+            name = f'{name}.{file_format}'
 
-        if os.path.exists(dirname) == False:
+        if not os.path.exists(dirname):
             os.makedirs(dirname)
 
         with open(os.path.join(dirname, name), 'w+', encoding='utf-8') as outfile:
             json.dump(content, outfile, ensure_ascii=False, indent='\t')
 
     def generate_cert(self, save_file=True):
-        cert_generator.run(self.cpf, self.password, save_file=save_file)
+        cert_generator.run(self.user, self.password, save_file=save_file)
+
+    def sync(self):
+        self.database_manager.sync(self.cached_data)
