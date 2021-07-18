@@ -3,7 +3,6 @@ from sqlalchemy.sql.sqltypes import Float
 from sqlalchemy import Column, Integer, String, DECIMAL
 from sqlalchemy.sql.schema import ForeignKey
 
-from .database_provider import DatabaseProvider
 from .declarative_base import DeclarativeBase
 from .base_model import BaseModel
 
@@ -30,7 +29,7 @@ class NuBankCardBill(DeclarativeBase, BaseModel):
         "NuBankCardTransaction", backref="card_bill", lazy=True)
 
     def __init__(self) -> None:
-        self.db_helper = DatabaseProvider.instance()
+        BaseModel.__init__(self)
 
     def from_dict(self, values: dict):
         self.id = values.get('id', None)

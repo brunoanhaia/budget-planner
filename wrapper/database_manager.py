@@ -1,13 +1,14 @@
+from wrapper.models.nubank_monthly_account_summary import NuBankAccountMonthlySummary
 from .models import DeclarativeBase, DatabaseProvider, NuBankCardBill
 
 
 class DatabaseManager:
     @staticmethod
     def sync(data: dict):
-        pass
+        
         class_map = {
             'card_bills': NuBankCardBill(),
-            # 'account_statement_summary': Account.MonthlySummary(cls.instance())
+            'account_monthly_summary': NuBankAccountMonthlySummary()
         }
 
         for key in data:
@@ -16,5 +17,5 @@ class DatabaseManager:
 
     @staticmethod
     def reset():
-        DeclarativeBase.metadata.drop_all(DatabaseProvider.instance())
-        DeclarativeBase.metadata.create_all(DatabaseProvider.instance())
+        DeclarativeBase.metadata.drop_all(DatabaseProvider.instance().engine)
+        DeclarativeBase.metadata.create_all(DatabaseProvider.instance().engine)

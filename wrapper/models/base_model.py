@@ -1,4 +1,10 @@
+from .database_provider import DatabaseProvider
+
+
 class BaseModel:
+    def __init__(self) -> None:
+        self.db_helper = DatabaseProvider.instance()
+
     @staticmethod
     def update_all_attributes(base_class, base, current, skip_fields=None):
         if skip_fields is None:

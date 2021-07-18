@@ -53,17 +53,16 @@ for user in config['users']:
             print('Sorry! We need the token to proceed')
             break
 
+    if args.reset_database:
+        nu.database_manager.reset()
+
     if not args.from_cache:
         nu.authenticate_with_token_string(user['token'])
         nu.get_account_feed()
         nu.get_account_statements()
         nu.get_card_statements()
         nu.get_card_feed()
-        nu.retrieve_card_bill_from_cache()
-        # nu.get_card_bills(details=True, save_file=True)
-        nu.generate_monthly_account_summary()
-
-    if args.reset_database:
-        nu.database_manager.reset()
+        nu.get_card_bills(details=True, save_file=True)
+        nu.generate_account_monthly_summary()
 
     nu.sync()

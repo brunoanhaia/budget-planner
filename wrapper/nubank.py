@@ -113,7 +113,6 @@ class NuBankWrapper:
             if save_file:
                 close_date = datetime.strptime(
                     bill['summary']['close_date'], "%Y-%m-%d")
-                # folder_path =  self._get_base_path("card_bills")
                 file_path = self.file_helper.card_bill.get_custom_path(
                     close_date.strftime("%Y-%m"))
 
@@ -200,7 +199,7 @@ class NuBankWrapper:
 
         return self.cached_data['account_feed']
 
-    def generate_monthly_account_summary(self) -> dict:
+    def generate_account_monthly_summary(self) -> dict:
         # It will retrieve new account statements if it wasn't retrieved before.
         if self.cached_data['account_statements'] is None:
             self.get_account_statements(save_file=True)
@@ -215,13 +214,13 @@ class NuBankWrapper:
 
         # Transforming string to datetime for easy grouping
         df['post_date'] = pd.to_datetime(df['postDate'], format='%Y-%m-%d')
-        df.loc[df.type == 'TransferInEvent', "credito"] = df.amount
-        df.loc[df.type != 'TransferInEvent', "debito"] = df.amount
+        df.loc[df.type == 'TransferInEvent', "credit"] = df.amount
+        df.loc[df.type != 'TransferInEvent', "debit"] = df.amount
 
         # Resampling data and grouping by post_date
         rdf: DataFrame = df.resample('MS', on='post_date').agg(
-            {'credito': 'sum', 'debito': 'sum'})
-        rdf['saldo'] = rdf.credito - rdf.debito
+            {'credit': 'sum', 'debit': 'sum'})
+        rdf['balance'] = rdf.credit - rdf.debit
 
         # Rounding everything with 2 decimal places
         rdf = rdf.round(2)
@@ -231,12 +230,12 @@ class NuBankWrapper:
         rdf['post_date'] = rdf["post_date"].dt.strftime("%Y-%m-%d")
 
         # Converting dataframe to dictionary
-        account_statement_summary = rdf.to_dict(orient='records')
+        self.cached_data['account_monthly_summary'] = rdf.to_dict(orient='records')
 
-        file_path = self.file_helper.account_statement_summary.path
-        self.save_to_file(file_path, account_statement_summary)
+        file_path = self.file_helper.account_monthly_summary.path
+        self.save_to_file(file_path, self.cached_data['account_monthly_summary'])
 
-        return account_statement_summary
+        return self.cached_data['account_monthly_summary']
 
     @staticmethod
     def save_to_file(file_name, content, file_format: str = 'json'):
