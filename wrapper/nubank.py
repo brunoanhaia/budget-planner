@@ -13,12 +13,12 @@ from .database_manager import DatabaseManager
 class NuBankWrapper:
 
     def __init__(self, cpf="", password="", mock: bool = True, data_dir: str = 'cache'):
+        self.cached_data = {}
         self.mock = mock
         self.user = cpf
         self.file_helper = FileHelper(self.user)
         self.database_manager = DatabaseManager
         self.password = password
-        self.cached_data = {}
         self.refresh_token: str = ''
         self.data_dir = data_dir
 
@@ -29,12 +29,29 @@ class NuBankWrapper:
 
     @property
     def user(self):
-        return self._user
+        if 'user' in self.cached_data and 'id' in self.cached_data['user']:
+            return self.cached_data['user']['id']
+        return ''
 
     @user.setter
     def user(self, value):
-        self._user = value
-        self.file_helper = FileHelper(self._user)
+        if 'user' not in self.cached_data:
+            self.cached_data['user'] = {}
+
+        self.cached_data['user']['id'] = value
+        self.file_helper = FileHelper(value)
+    
+    @property
+    def nickname(self):
+        return self.cached_data['user']['nickname']
+
+    @nickname.setter
+    def nickname(self, value):
+        if 'user' not in self.cached_data:
+            self.cached_data['user'] = {}
+        
+        self.cached_data['user']['nickname'] = value
+
 
     def authenticate_with_qr_code(self):
         if self.mock:

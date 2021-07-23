@@ -1,5 +1,4 @@
-from wrapper.models.nubank_monthly_account_summary import NuBankAccountMonthlySummary
-from .models import DeclarativeBase, DatabaseProvider, NuBankCardBill
+from .models import DeclarativeBase, DatabaseProvider, NuBankCardBill, NuBankAccountMonthlySummary, User
 
 
 class DatabaseManager:
@@ -7,6 +6,7 @@ class DatabaseManager:
     def sync(data: dict):
         
         class_map = {
+            'user': User(),
             'card_bills': NuBankCardBill(),
             'account_monthly_summary': NuBankAccountMonthlySummary()
         }

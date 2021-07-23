@@ -1,7 +1,9 @@
-from .base_model import BaseModel
-from sqlalchemy import Integer, Column, Date, DECIMAL, String
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql.sqltypes import Date, Integer, String, DECIMAL
+from sqlalchemy import Column
 
 from .declarative_base import DeclarativeBase
+from .base_model import BaseModel
 
 
 class NuBankAccountMonthlySummary(DeclarativeBase, BaseModel):

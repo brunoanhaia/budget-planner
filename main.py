@@ -26,6 +26,8 @@ for user in config['users']:
         break
     else:
         nu.user = user['cpf']
+        if 'nickname' in user:
+            nu.nickname = user['nickname']
 
     if not os.path.exists(os.path.join(nu.data_dir, nu.user, f"{nu.user}_cert.p12")):
         print('Certificate not found')
@@ -62,7 +64,7 @@ for user in config['users']:
         nu.get_account_statements()
         nu.get_card_statements()
         nu.get_card_feed()
-        nu.get_card_bills(details=True, save_file=True)
+        nu.get_card_bills(details=True, save_file=False)
         nu.generate_account_monthly_summary()
 
     nu.sync()
