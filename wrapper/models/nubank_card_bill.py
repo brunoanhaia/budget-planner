@@ -119,5 +119,3 @@ class NuBankCardBill(DeclarativeBase, BaseModel):
                 self.update_all_attributes(NuBankCardTransaction, query_result[0], current_transaction, [
                     'nubank_id', 'card_bill_id'])
                 session.add(query_result[0])
-
-

@@ -102,8 +102,11 @@ class NuBankWrapper:
         return self.cached_data['account_statements']
 
     def get_card_bills(self, details: bool, save_file: bool = False):
-        bills = self.nu.get_bills()
+        bills: list[dict] = self.nu.get_bills()
         for bill in bills:
+
+            # Link bill to user
+            bill['cpf'] = self.user
 
             # Retrieving the bill details (transactions) from open and closed bills
             if details and bill['state'] != 'future':
@@ -111,7 +114,7 @@ class NuBankWrapper:
                 bill['details'] = bill_detais['line_items']
 
                 for transaction in bill['details']:
-                    transaction['amount'] = transaction['amount'] / 100
+                    transaction['amount'] = transaction['amount']/100
 
             if 'summary' in bill:
                 summary = bill['summary']
@@ -124,8 +127,9 @@ class NuBankWrapper:
                 summary['paid'] = summary['paid']/100
                 summary['minimum_payment'] = summary['minimum_payment']/100
 
+            self.__planify_summary(bill)
+
             # Storing the data in the class instance for future use
-            self.cached_data['card_bills'] = bills
 
             if save_file:
                 close_date = datetime.strptime(
@@ -134,6 +138,8 @@ class NuBankWrapper:
                     close_date.strftime("%Y-%m"))
 
                 self.save_to_file(file_path, bill)
+        
+        self.cached_data['card_bills'] = bills
 
         return bills
 
@@ -149,17 +155,17 @@ class NuBankWrapper:
                     'nubank_id': file_content.get('id', None),
                     'cpf': self.user,
                     'state': file_content.get('state', None),
-                    'due_date': file_content['summary'].get('due_date', None),
-                    'close_date': file_content['summary'].get('close_date', None),
-                    'past_balance': file_content['summary'].get('past_balance', None),
-                    'effective_due_date': file_content['summary'].get('effective_due_date', None),
-                    'total_balance': file_content['summary'].get('total_balance', None),
-                    'interest_rate': file_content['summary'].get('interest_rate', None),
-                    'interest': file_content['summary'].get('interest', None),
-                    'total_cumulative': file_content['summary'].get('total_cumulative', None),
-                    'paid': file_content['summary'].get('paid', None),
-                    'minimum_payment': file_content['summary'].get('minimum_payment', None),
-                    'open_date': file_content['summary'].get('open_date', None),
+                    'due_date': file_content.get('due_date', None),
+                    'close_date': file_content.get('close_date', None),
+                    'past_balance': file_content.get('past_balance', None),
+                    'effective_due_date': file_content.get('effective_due_date', None),
+                    'total_balance': file_content.get('total_balance', None),
+                    'interest_rate': file_content.get('interest_rate', None),
+                    'interest': file_content.get('interest', None),
+                    'total_cumulative': file_content.get('total_cumulative', None),
+                    'paid': file_content.get('paid', None),
+                    'minimum_payment': file_content.get('minimum_payment', None),
+                    'open_date': file_content.get('open_date', None),
                 }
 
                 if '_links' in file_content \
@@ -273,3 +279,11 @@ class NuBankWrapper:
 
     def sync(self):
         self.database_manager.sync(self.cached_data)
+
+    def __planify_summary(self, values: dict):
+        
+        for summary_key in values['summary']:
+            inner_value = values['summary'][summary_key]
+            values[summary_key] = inner_value
+        
+        values.pop('summary')
