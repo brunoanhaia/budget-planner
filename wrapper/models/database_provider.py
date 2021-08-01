@@ -9,8 +9,7 @@ class DatabaseProvider:
     _instance = None
 
     def __init__(self) -> None:
-        mysql_config = ConfigLoader.load(
-            'env.json')['mysqlConfig']
+        mysql_config = ConfigLoader.load(os.getenv("CONFIG_FILE"))['mysqlConfig']
 
         # MySQL Connection String
         self.engine = create_engine(

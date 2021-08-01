@@ -133,7 +133,7 @@ class NuBankWrapper:
 
             if save_file:
                 close_date = datetime.strptime(
-                    bill['summary']['close_date'], "%Y-%m-%d")
+                    bill['close_date'], "%Y-%m-%d")
                 file_path = self.file_helper.card_bill.get_custom_path(
                     close_date.strftime("%Y-%m"))
 
