@@ -77,9 +77,9 @@ class NuBankCardBill(DeclarativeBase, BaseModel):
                     NuBankCardBill, base_bill, current_bill)
                 session.add(base_bill)
 
-                if 'transactions' in current_value:
+                if 'details' in current_value:
                     self.__sync_card_transactions(
-                        current_value['transactions'], base_bill.id)
+                        current_value['details'], base_bill.id)
 
                 print(f'{base_bill.close_date} has been updated')
 

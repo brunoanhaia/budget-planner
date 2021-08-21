@@ -21,7 +21,8 @@ class NuBankAccountMonthlySummary(DeclarativeBase, BaseModel):
 
     def from_dict(self, values: list[dict]):
         self.id = values.get('id', None)
-        self.ref_date = values.get('post_date', 0)
+        self.cpf = values.get('cpf', None)
+        self.ref_date = values.get('ref_date', 0)
         self.credit = values.get('credit', 0)
         self.debit = values.get('debit', 0)
         self.total = values.get('total', 0)

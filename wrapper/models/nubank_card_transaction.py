@@ -27,16 +27,16 @@ class NuBankCardTransaction(DeclarativeBase):
     def from_dict(self, values: dict):
         self.id = values.get('id', None)
         self.card_bill_id = values.get('card_bill_id', None)
-        self.state = values.get('state')
-        self.category = values['category']
-        self.amount = values['amount']
-        self.transaction_id = values['transaction_id']
-        self.index = values['index']
-        self.charges = values['charges']
-        self.type = values['type']
-        self.title = values['title']
-        self.nubank_id = values['nubank_id']
-        self.href = values['href']
-        self.post_date = values['post_date']
+        self.state = values.get('state', None)
+        self.category = values.get('category', None)
+        self.amount = values.get('amount', None)
+        self.transaction_id = values.get('transaction_id', None)
+        self.index = values.get('index', None)
+        self.charges = values.get('charges', None)
+        self.type = values.get('type', None)
+        self.title = values.get('title', None)
+        self.nubank_id = values.get('nubank_id', None)
+        self.href = values.get('href', None)
+        self.post_date = values.get('post_date', None)
 
         return self

@@ -48,9 +48,7 @@ for user in config['users']:
             'We need the token to proceed, do you want to generate the token? Y/N')
 
         if option == 'Y':
-            refresh_token = nu.authenticate_with_certificate()
-            user['token'] = refresh_token
-            ConfigLoader.save(config_file, config)
+            nu.authenticate_with_certificate()
         else:
             print('Sorry! We need the token to proceed')
             break
@@ -64,7 +62,7 @@ for user in config['users']:
         nu.get_account_statements()
         nu.get_card_statements()
         nu.get_card_feed()
-        nu.get_card_bills(details=True, save_file=False)
+        nu.get_card_bills(details=True, save_file=True)
         nu.generate_account_monthly_summary()
 
     nu.sync()

@@ -1,5 +1,6 @@
 import json
 import os
+from wrapper.utils.config_loader import ConfigLoader
 import cert_generator
 import pandas as pd
 
@@ -69,6 +70,14 @@ class NuBankWrapper:
         self.refresh_token = self.nu.authenticate_with_cert(
             self.user, self.password, self.file_helper.certificate.path)
 
+        ConfigLoader.update(os.getenv("CONFIG_FILE"), {
+            'type': 'user',
+            'key': self.user,
+            'update_values': {
+                'token': self.refresh_token
+            }
+        })
+
         self.save_to_file(self.file_helper.token.path,
                           self.refresh_token, file_format='')
 
@@ -83,8 +92,12 @@ class NuBankWrapper:
             return self.nu.authenticate_with_refresh_token(refresh_token, cert_path)
 
     def authenticate_with_token_string(self, token: str):
-        cert_path = self.file_helper.certificate.path
-        return self.nu.authenticate_with_refresh_token(token, cert_path)
+        try:
+            cert_path = self.file_helper.certificate.path
+            return self.nu.authenticate_with_refresh_token(token, cert_path)
+        except:
+            return self.authenticate_with_certificate()
+
 
     def get_account_balance(self):
         return self.nu.get_account_balance()
@@ -111,10 +124,16 @@ class NuBankWrapper:
             # Retrieving the bill details (transactions) from open and closed bills
             if details and bill['state'] != 'future':
                 bill_detais = self.nu.get_bill_details(bill)['bill']
-                bill['details'] = bill_detais['line_items']
+                bill['details'] = bill_detais.get('line_items', None)
+                bill['nubank_id'] = bill_detais.get('id', None)
 
                 for transaction in bill['details']:
                     transaction['amount'] = transaction['amount']/100
+                    transaction['nubank_id'] = transaction['id']
+                    transaction.pop('id')
+
+                    if 'href' in transaction and 'transaction_id' not in transaction:
+                        transaction['transaction_id'] = transaction['href'].split('/')[-1]
 
             if 'summary' in bill:
                 summary = bill['summary']
@@ -152,7 +171,7 @@ class NuBankWrapper:
             with open(os.path.join(base_path, file), 'r', encoding='utf8') as f:
                 file_content = json.load(f)
                 card_bill = {
-                    'nubank_id': file_content.get('id', None),
+                    'nubank_id': file_content.get('nubank_id', None),
                     'cpf': self.user,
                     'state': file_content.get('state', None),
                     'due_date': file_content.get('due_date', None),
@@ -176,7 +195,7 @@ class NuBankWrapper:
 
                     for t in file_content['details']:
                         transaction = {
-                            'nubank_id': t['id'],
+                            'nubank_id': t.get('nubank_id', None),
                             'category': t.get('category', None),
                             'amount': t.get('amount', None),
                             'transaction_id': t.get('transaction_id', None),
@@ -185,7 +204,7 @@ class NuBankWrapper:
                             'type': t.get('type', None),
                             'title': t.get('title', None),
                             'href': t.get('href', None),
-                            'post_date': t.get('post_date', None),
+                            'ref_date': t.get('ref_date', None),
                         }
 
                         if 'transactions' not in card_bill:
@@ -236,21 +255,23 @@ class NuBankWrapper:
         df = pd.DataFrame.from_dict(values)
 
         # Transforming string to datetime for easy grouping
-        df['post_date'] = pd.to_datetime(df['postDate'], format='%Y-%m-%d')
+        df['ref_date'] = pd.to_datetime(df['postDate'], format='%Y-%m-%d')
         df.loc[df.type == 'TransferInEvent', "credit"] = df.amount
         df.loc[df.type != 'TransferInEvent', "debit"] = df.amount
 
-        # Resampling data and grouping by post_date
-        rdf: DataFrame = df.resample('MS', on='post_date').agg(
+        # Resampling data and grouping by ref_date
+        rdf: DataFrame = df.resample('MS', on='ref_date').agg(
             {'credit': 'sum', 'debit': 'sum'})
         rdf['balance'] = rdf.credit - rdf.debit
+        rdf['total'] = rdf['balance'].cumsum()
+        rdf['cpf'] = self.user
 
         # Rounding everything with 2 decimal places
         rdf = rdf.round(2)
 
-        # Transforming the post_date index back to column and to the appropriate format
+        # Transforming the ref_date index back to column and to the appropriate format
         rdf.reset_index(inplace=True)
-        rdf['post_date'] = rdf["post_date"].dt.strftime("%Y-%m-%d")
+        rdf['ref_date'] = rdf["ref_date"].dt.strftime("%Y-%m-%d")
 
         # Converting dataframe to dictionary
         self.cached_data['account_monthly_summary'] = rdf.to_dict(orient='records')
