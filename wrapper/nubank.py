@@ -1,5 +1,6 @@
 import json
 import os
+import enum
 from wrapper.utils.config_loader import ConfigLoader
 import cert_generator
 import pandas as pd
@@ -10,8 +11,18 @@ from pynubank import MockHttpClient, Nubank
 from wrapper.file_helper import FileHelper
 from .database_manager import DatabaseManager
 
+class CachedDataEnum(enum.Enum):
+    AccountStatements = "account_statements"
+    User = "user"
+    CardBill = "card_bills"
+    AccountFeed = "account_feed"
+    AccountMonthlySummary = "account_monthly_summary"
+
+
 
 class NuBankWrapper:
+
+
 
     def __init__(self, cpf="", password="", mock: bool = True, data_dir: str = 'cache'):
         self.cached_data = {}
@@ -30,28 +41,28 @@ class NuBankWrapper:
 
     @property
     def user(self):
-        if 'user' in self.cached_data and 'id' in self.cached_data['user']:
-            return self.cached_data['user']['id']
+        if CachedDataEnum.User in self.cached_data and 'id' in self.cached_data[CachedDataEnum.AccountStatements]:
+            return self.cached_data[CachedDataEnum.User]['id']
         return ''
 
     @user.setter
     def user(self, value):
-        if 'user' not in self.cached_data:
-            self.cached_data['user'] = {}
+        if CachedDataEnum.User not in self.cached_data:
+            self.cached_data[CachedDataEnum.User] = {}
 
-        self.cached_data['user']['id'] = value
+        self.cached_data[CachedDataEnum.User]['id'] = value
         self.file_helper = FileHelper(value)
     
     @property
     def nickname(self):
-        return self.cached_data['user']['nickname']
+        return self.cached_data[CachedDataEnum.User]['nickname']
 
     @nickname.setter
     def nickname(self, value):
-        if 'user' not in self.cached_data:
-            self.cached_data['user'] = {}
+        if CachedDataEnum.User not in self.cached_data:
+            self.cached_data[CachedDataEnum.User] = {}
         
-        self.cached_data['user']['nickname'] = value
+        self.cached_data[CachedDataEnum.User]['nickname'] = value
 
 
     def authenticate_with_qr_code(self):
@@ -71,7 +82,7 @@ class NuBankWrapper:
             self.user, self.password, self.file_helper.certificate.path)
 
         ConfigLoader.update(os.getenv("CONFIG_FILE"), {
-            'type': 'user',
+            'type': CachedDataEnum.User,
             'key': self.user,
             'update_values': {
                 'token': self.refresh_token
@@ -103,16 +114,16 @@ class NuBankWrapper:
         return self.nu.get_account_balance()
 
     def get_account_statements(self, save_file: bool = False):
-        self.cached_data['account_statements'] = self.nu.get_account_statements()
+        self.cached_data[CachedDataEnum.AccountStatements] = self.nu.get_account_statements()
 
         if save_file:
             current_date = datetime.now()
             file_path = self.file_helper.account_statement.get_custom_path(
                 current_date.strftime("%Y-%m-%d_%H-%M-%S"))
 
-            self.save_to_file(file_path, self.cached_data['account_statements'])
+            self.save_to_file(file_path, self.cached_data[CachedDataEnum.AccountStatements])
 
-        return self.cached_data['account_statements']
+        return self.cached_data[CachedDataEnum.AccountStatements]
 
     def get_card_bills(self, details: bool, save_file: bool = False):
         bills: list[dict] = self.nu.get_bills()
@@ -158,7 +169,7 @@ class NuBankWrapper:
 
                 self.save_to_file(file_path, bill)
         
-        self.cached_data['card_bills'] = bills
+        self.cached_data[CachedDataEnum.CardBill] = bills
 
         return bills
 
@@ -213,9 +224,9 @@ class NuBankWrapper:
 
                 card_bills_list.append(card_bill)
 
-        self.cached_data['card_bills'] = card_bills_list
+        self.cached_data[CachedDataEnum.CardBill] = card_bills_list
 
-        return self.cached_data['card_bills']
+        return self.cached_data[CachedDataEnum.CardBill]
 
     def get_card_statements(self):
         card_statements = self.nu.get_card_statements()
@@ -235,18 +246,21 @@ class NuBankWrapper:
         return card_feed
 
     def get_account_feed(self):
-        self.cached_data['account_feed'] = self.nu.get_account_feed()
+        self.cached_data[CachedDataEnum.AccountFeed] = self.nu.get_account_feed()
         self.save_to_file(self.file_helper.account_feed.path,
-                          self.cached_data['account_feed'])
+                          self.cached_data[CachedDataEnum.AccountFeed])
 
-        return self.cached_data['account_feed']
+        return self.cached_data[CachedDataEnum.AccountFeed]
+
+    def generate_card_transactions_by_tag(self) -> dict:
+        if self.cached_data[CachedDataEnum.CardBill]
 
     def generate_account_monthly_summary(self) -> dict:
         # It will retrieve new account statements if it wasn't retrieved before.
-        if self.cached_data['account_statements'] is None:
+        if self.cached_data[CachedDataEnum.AccountStatements] is None:
             self.get_account_statements(save_file=True)
 
-        values = self.cached_data['account_statements']
+        values = self.cached_data[CachedDataEnum.AccountStatements]
 
         # Still not sure why, but i cannot access __typename directly with pandas, so I'm changing it to type only
         for v in values:
@@ -274,12 +288,12 @@ class NuBankWrapper:
         rdf['ref_date'] = rdf["ref_date"].dt.strftime("%Y-%m-%d")
 
         # Converting dataframe to dictionary
-        self.cached_data['account_monthly_summary'] = rdf.to_dict(orient='records')
+        self.cached_data[CachedDataEnum.AccountMonthlySummary] = rdf.to_dict(orient='records')
 
         file_path = self.file_helper.account_monthly_summary.path
-        self.save_to_file(file_path, self.cached_data['account_monthly_summary'])
+        self.save_to_file(file_path, self.cached_data[CachedDataEnum.AccountMonthlySummary])
 
-        return self.cached_data['account_monthly_summary']
+        return self.cached_data[CachedDataEnum.AccountMonthlySummary]
 
     @staticmethod
     def save_to_file(file_name, content, file_format: str = 'json'):
@@ -303,8 +317,9 @@ class NuBankWrapper:
 
     def __planify_summary(self, values: dict):
         
-        for summary_key in values['summary']:
-            inner_value = values['summary'][summary_key]
-            values[summary_key] = inner_value
+        # Iterate over each key in the summary dictionary
+        for key in values['summary']:
+            inner_value = values['summary'][key]
+            values[key] = inner_value
         
         values.pop('summary')
