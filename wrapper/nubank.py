@@ -2,11 +2,10 @@ import json
 import os
 import enum
 
-from numpy import result_type
-from wrapper.utils.config_loader import ConfigLoader
 import cert_generator
 import pandas as pd
 
+from .utils import ConfigLoader, planify_array, planify_summary_section
 from datetime import datetime
 from pandas.core.frame import DataFrame
 from pynubank import MockHttpClient, Nubank
@@ -168,7 +167,7 @@ class NuBankWrapper:
                 summary['paid'] = summary['paid']/100
                 summary['minimum_payment'] = summary['minimum_payment']/100
 
-            self.__planify_summary(bill)
+            planify_summary_section(bill)
 
             if save_file:
                 close_date = datetime.strptime(
@@ -272,7 +271,7 @@ class NuBankWrapper:
         amount_per_tag_dict = {}
 
         for transaction in transactions_list:
-            tags = self.__planify_array(transaction['tags'])
+            tags = planify_array(transaction['tags'])
             amount = transaction['amount']
 
             for tag in tags:
@@ -282,18 +281,6 @@ class NuBankWrapper:
                     amount_per_tag_dict[tag] = amount
 
         return amount_per_tag_dict
-
-    def __planify_array(self, array: list):
-        result = []
-        for elem in array:
-            if type(elem) is list:
-                self.__planify_array(elem)
-            if type(elem) is str:
-                result.append(elem)
-            else:
-                result.extend(elem)
-
-        return result
 
     def __card_bill_add_details_from_card_statement(self, card_bill: dict):
 
@@ -387,11 +374,3 @@ class NuBankWrapper:
     def sync(self):
         self.database_manager.sync(self.cached_data)
 
-    def __planify_summary(self, values: dict):
-
-        # Iterate over each key in the summary dictionary
-        for key in values['summary']:
-            inner_value = values['summary'][key]
-            values[key] = inner_value
-
-        values.pop('summary')
