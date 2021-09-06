@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import json
 import os
 
 ACCOUNT_FEED = 'account_feed'
@@ -47,3 +48,17 @@ class FileHelper:
 
     def from_base_dir(self, path: str):
         return os.path.join(self.cache_dir, self.user, path)
+    
+    @staticmethod
+    def save_to_file(file_name, content, file_format: str = 'json'):
+        dirname = os.path.dirname(file_name)
+        name = os.path.basename(file_name)
+
+        if file_format != '':
+            name = f'{name}.{file_format}'
+
+        if not os.path.exists(dirname):
+            os.makedirs(dirname)
+
+        with open(os.path.join(dirname, name), 'w+', encoding='utf-8') as outfile:
+            json.dump(content, outfile, ensure_ascii=False, indent='\t')

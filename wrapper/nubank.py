@@ -1,11 +1,12 @@
 import json
 import os
 import enum
+from wrapper.utils.utils import card_bill_add_details_from_card_statement, transaction_add_details_from_card_statement
 
 import cert_generator
 import pandas as pd
 
-from .utils import ConfigLoader, planify_array, planify_summary_section
+from .utils import ConfigLoader, planify_array, planify_summary_section, group_tags_and_get_amount_from_card_bill
 from datetime import datetime
 from pandas.core.frame import DataFrame
 from pynubank import MockHttpClient, Nubank
@@ -89,7 +90,7 @@ class NuBankWrapper:
             }
         })
 
-        self.save_to_file(self.file_helper.token.path,
+        FileHelper.save_to_file(self.file_helper.token.path,
                           self.refresh_token, file_format='')
 
         return self.refresh_token
@@ -120,7 +121,7 @@ class NuBankWrapper:
             file_path = self.file_helper.account_statement.get_custom_path(
                 current_date.strftime("%Y-%m-%d_%H-%M-%S"))
 
-            self.save_to_file(
+            FileHelper.save_to_file(
                 file_path, self.cached_data[CachedDataEnum.AccountStatements.value])
 
         return self.cached_data[CachedDataEnum.AccountStatements.value]
@@ -150,11 +151,11 @@ class NuBankWrapper:
                         transaction['transaction_id'] = transaction['href'].split(
                             '/')[-1]
 
-                    transaction = self.__transaction_add_details_from_card_statement(
-                        transaction)
+                    transaction = transaction_add_details_from_card_statement(
+                        transaction, self.cached_data[CachedDataEnum.CardStatements.value])
 
-                self.__card_bill_add_details_from_card_statement(bill)
-                self.__group_tags_and_get_amount_from_card_bill(bill)
+                card_bill_add_details_from_card_statement(bill)
+                group_tags_and_get_amount_from_card_bill(bill)
 
             if 'summary' in bill:
                 summary = bill['summary']
@@ -175,7 +176,7 @@ class NuBankWrapper:
                 file_path = self.file_helper.card_bill.get_custom_path(
                     close_date.strftime("%Y-%m"))
 
-                self.save_to_file(file_path, bill)
+                FileHelper.save_to_file(file_path, bill)
 
         # Storing the data in the class instance for future use
         self.cached_data[CachedDataEnum.CardBill.value] = bills
@@ -224,7 +225,7 @@ class NuBankWrapper:
                 statement.pop('details')
 
         file_path = self.file_helper.card_statements.path
-        self.save_to_file(file_path, card_statements)
+        FileHelper.save_to_file(file_path, card_statements)
 
         return card_statements
 
@@ -233,14 +234,14 @@ class NuBankWrapper:
 
         file_path = self.file_helper.card_feed.path
 
-        self.save_to_file(file_path, card_feed)
+        FileHelper.save_to_file(file_path, card_feed)
 
         return card_feed
 
     def get_account_feed(self):
         self.cached_data[CachedDataEnum.AccountFeed.value] = self.nu.get_account_feed(
         )
-        self.save_to_file(self.file_helper.account_feed.path,
+        FileHelper.save_to_file(self.file_helper.account_feed.path,
                           self.cached_data[CachedDataEnum.AccountFeed.value])
 
         return self.cached_data[CachedDataEnum.AccountFeed.value]
@@ -251,66 +252,10 @@ class NuBankWrapper:
             bill for bill in card_bills if 'details' in bill]
 
         for card_bill in card_bill_with_details:
-            card_bill = self.__group_tags_and_get_amount_from_card_bill(
+            card_bill = group_tags_and_get_amount_from_card_bill(
                 card_bill)
 
         self.cached_data[CachedDataEnum.CardBill.value] = card_bills
-
-    def __group_tags_and_get_amount_from_card_bill(self, card_bill):
-        transactions_with_tag = [
-            transaction for transaction in card_bill['details'] if 'tags' in transaction]
-
-        if len(transactions_with_tag) > 0:
-            amount_per_tag = self.__get_amount_per_tag(
-                transactions_with_tag)
-            card_bill['amount_per_tag'] = amount_per_tag
-
-        return card_bill
-
-    def __get_amount_per_tag(self, transactions_list: list[dict]) -> dict:
-        amount_per_tag_dict = {}
-
-        for transaction in transactions_list:
-            tags = planify_array(transaction['tags'])
-            amount = transaction['amount']
-
-            for tag in tags:
-                if tag in amount_per_tag_dict:
-                    amount_per_tag_dict[tag] += amount
-                else:
-                    amount_per_tag_dict[tag] = amount
-
-        return amount_per_tag_dict
-
-    def __card_bill_add_details_from_card_statement(self, card_bill: dict):
-
-        if 'details' in card_bill:
-            for transaction in card_bill['details']:
-                transaction = self.__transaction_add_details_from_card_statement(
-                    transaction)
-
-        return card_bill
-
-    def __transaction_add_details_from_card_statement(self, transaction: dict):
-
-        if CachedDataEnum.CardStatements.value not in self.cached_data:
-            self.retrive_from_cache(CachedDataEnum.CardStatements)
-
-        card_statements = self.cached_data[CachedDataEnum.CardStatements.value]
-
-        statement = [statement for statement in card_statements if (
-            'transaction_id' in transaction and statement['id'] == transaction['transaction_id'])]
-
-        if statement != None and len(statement) > 0:
-            detail_filter_list = ['tags', 'charges']
-
-            for detail in detail_filter_list:
-                st = statement[0]
-
-                if detail in st:
-                    transaction[detail] = st[detail]
-
-        return transaction
 
     def generate_account_monthly_summary(self) -> dict:
         # It will retrieve new account statements if it wasn't retrieved before.
@@ -349,24 +294,10 @@ class NuBankWrapper:
             orient='records')
 
         file_path = self.file_helper.account_monthly_summary.path
-        self.save_to_file(
+        FileHelper.save_to_file(
             file_path, self.cached_data[CachedDataEnum.AccountMonthlySummary.value])
 
         return self.cached_data[CachedDataEnum.AccountMonthlySummary.value]
-
-    @staticmethod
-    def save_to_file(file_name, content, file_format: str = 'json'):
-        dirname = os.path.dirname(file_name)
-        name = os.path.basename(file_name)
-
-        if file_format != '':
-            name = f'{name}.{file_format}'
-
-        if not os.path.exists(dirname):
-            os.makedirs(dirname)
-
-        with open(os.path.join(dirname, name), 'w+', encoding='utf-8') as outfile:
-            json.dump(content, outfile, ensure_ascii=False, indent='\t')
 
     def generate_cert(self, save_file=True):
         cert_generator.run(self.user, self.password, save_file=save_file)
