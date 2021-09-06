@@ -14,8 +14,9 @@ TOKEN_SUFFIX = '.token'
 @dataclass()
 class FilePath:
 
-    def __init__(self, path: str, is_folder: bool = False) -> None:
+    def __init__(self, path: str, is_folder: bool = False, extension: str = 'json') -> None:
         self.path: str = path
+        self.extension: str = extension
         self.__is_folder: bool = is_folder
         self.files = self._get_files()
 
@@ -26,6 +27,8 @@ class FilePath:
     def get_custom_path(self, custom_string: str) -> str:
         return os.path.join(self.path, custom_string)
 
+    def get_complete_path(self) -> str:
+        return self.path + '.' + self.extension
 
 @dataclass()
 class FileHelper:

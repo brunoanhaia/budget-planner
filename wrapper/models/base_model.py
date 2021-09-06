@@ -16,3 +16,15 @@ class BaseModel:
                 attribute_value = getattr(current, k)
                 if getattr(base, k) != attribute_value:
                     setattr(base, k, attribute_value)
+
+    def from_dict(self, values: dict):
+        keys = type(self).__dict__.keys()
+
+        for key in keys:
+            dict_value = values.get(key, None)
+            value_type = type(dict_value)
+
+            if value_type not in [dict, list] and dict_value is not None:
+                self.__setattr__(key, dict_value)
+
+        return self

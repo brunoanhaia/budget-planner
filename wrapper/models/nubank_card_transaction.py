@@ -1,3 +1,4 @@
+from wrapper.models.base_model import BaseModel
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql.sqltypes import Integer, String, DECIMAL
 from sqlalchemy import Column
@@ -7,7 +8,7 @@ from .declarative_base import DeclarativeBase
 
 
 
-class NuBankCardTransaction(DeclarativeBase):
+class NuBankCardTransaction(DeclarativeBase, BaseModel):
     __tablename__ = 'card_bill_transaction'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -23,20 +24,3 @@ class NuBankCardTransaction(DeclarativeBase):
     nubank_id = Column(String(255))
     href = Column(String(255))
     post_date = Column(String(255))
-
-    def from_dict(self, values: dict):
-        self.id = values.get('id', None)
-        self.card_bill_id = values.get('card_bill_id', None)
-        self.state = values.get('state', None)
-        self.category = values.get('category', None)
-        self.amount = values.get('amount', None)
-        self.transaction_id = values.get('transaction_id', None)
-        self.index = values.get('index', None)
-        self.charges = values.get('charges', None)
-        self.type = values.get('type', None)
-        self.title = values.get('title', None)
-        self.nubank_id = values.get('nubank_id', None)
-        self.href = values.get('href', None)
-        self.post_date = values.get('post_date', None)
-
-        return self

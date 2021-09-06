@@ -33,22 +33,7 @@ class NuBankCardBill(DeclarativeBase, BaseModel):
         BaseModel.__init__(self)
 
     def from_dict(self, values: dict):
-        self.id = values.get('id', None)
-        self.state = values.get('state', None)
-        self.nubank_id = values.get('nubank_id', None)
-        self.cpf = values.get('cpf', None)
-        self.due_date = values.get('due_date', None)
-        self.close_date = values.get('close_date', None)
-        self.past_balance = values.get('past_balance', None)
-        self.effective_due_date = values.get('effective_due_date', None)
-        self.total_balance = values.get('total_balance', None)
-        self.interest_rate = values.get('interest_rate', None)
-        self.interest = values.get('interest', None)
-        self.total_cumulative = values.get('total_cumulative', None)
-        self.paid = values.get('paid', None)
-        self.minimum_payment = values.get('minimum_payment', None)
-        self.open_date = values.get('open_date', None)
-        self.link_href = values.get('link_href', None)
+        BaseModel.from_dict(self, values)
 
         # This means that it is a future card bill and we could not get the details.
         if 'transactions' in values:
