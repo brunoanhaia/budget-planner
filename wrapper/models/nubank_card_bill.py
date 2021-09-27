@@ -1,33 +1,24 @@
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import Float, Integer, String, DECIMAL
-from sqlalchemy import Column
-from sqlalchemy.sql.schema import ForeignKey
-
-from .declarative_base import DeclarativeBase
 from .nubank_card_transaction import NuBankCardTransaction
 from .base_model import BaseModel
 
 
-class NuBankCardBill(DeclarativeBase, BaseModel):
-    __tablename__ = 'card_bill'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    nubank_id = Column(String(255))
-    cpf = Column(String(255), ForeignKey('user.id'))
-    state = Column(String(255))
-    due_date = Column(String(255))
-    close_date = Column(String(255))
-    past_balance = Column(DECIMAL(10, 4))
-    effective_due_date = Column(String(255))
-    total_balance = Column(DECIMAL(10, 4))
-    interest_rate = Column(Float)
-    interest = Column(Float)
-    total_cumulative = Column(DECIMAL(10, 4))
-    paid = Column(DECIMAL(10, 4))
-    minimum_payment = Column(DECIMAL(10, 4))
-    open_date = Column(String(255))
-    link_href = Column(String(255))
-    transactions = relationship(
-        "NuBankCardTransaction", backref="card_bill", lazy=True)
+class NuBankCardBill(BaseModel):
+    id: int
+    nubank_id: str
+    cpf: str
+    state: str
+    due_date: str
+    close_date: str
+    past_balance: float
+    effective_due_date: str
+    total_balance: float
+    interest_rate: float
+    interest: float
+    total_cumulative: float
+    paid: float
+    minimum_payment: float
+    open_date: str
+    link_href: str
 
     def __init__(self) -> None:
         BaseModel.__init__(self)

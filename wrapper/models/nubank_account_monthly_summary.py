@@ -1,20 +1,16 @@
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import Date, Integer, String, DECIMAL
-from sqlalchemy import Column
-
-from .declarative_base import DeclarativeBase
 from .base_model import BaseModel
+from datetime import date, datetime
 
 
-class NuBankAccountMonthlySummary(DeclarativeBase, BaseModel):
-    __tablename__ = 'account_monthly_summary'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    cpf = Column(String(255))
-    ref_date = Column(Date)
-    debit = Column(DECIMAL(10, 2))
-    credit = Column(DECIMAL(10, 2))
-    total = Column(DECIMAL(10, 2))
-    balance = Column(DECIMAL(10, 2))
+class NuBankAccountMonthlySummary(BaseModel):
+
+    id: int
+    cpf: str
+    ref_date: date
+    debit: float
+    credit: float
+    total: float
+    balance: float
 
     def __init__(self) -> None:
         BaseModel.__init__(self)

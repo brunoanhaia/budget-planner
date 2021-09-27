@@ -1,18 +1,10 @@
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql.sqltypes import String
-from sqlalchemy import Column
-
-from .declarative_base import DeclarativeBase
 from .base_model import BaseModel
 from .database_provider import DatabaseProvider
 
-class User(DeclarativeBase, BaseModel):
-    __tablename__ = 'user'
+class User(BaseModel):
 
-    id = Column(String(255), primary_key=True)
-    nickname = Column(String(255))
-    card_bills = relationship(
-        "NuBankCardBill", backref="user", lazy=True)
+    id: str
+    nickname: str
 
     def __init__(self) -> None:
             self.db_helper = DatabaseProvider.instance()
