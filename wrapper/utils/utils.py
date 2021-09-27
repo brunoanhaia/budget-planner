@@ -22,16 +22,21 @@ def planify_summary_section(values: dict):
     values.pop('summary')
 
 
-def group_tags_and_get_amount_from_card_bill(card_bill):
-    transactions_with_tag = [
-        transaction for transaction in card_bill['details'] if 'tags' in transaction]
+def group_tags_and_get_amount_from_transactions(transaction_obj: list[dict]):
+    transactions_with_tag_obj = [
+        transaction for transaction in transaction_obj['transactions'] if 'tags' in transaction]
 
-    if len(transactions_with_tag) > 0:
+    if len(transactions_with_tag_obj) > 0:
         amount_per_tag = get_amount_per_tag(
-            transactions_with_tag)
-        card_bill['amount_per_tag'] = amount_per_tag
+            transactions_with_tag_obj)
 
-    return card_bill
+        amount_per_tag_obj = {}
+        amount_per_tag_obj['cpf'] = transaction_obj['cpf']
+        amount_per_tag_obj['ref_date'] = transaction_obj['ref_date']
+        amount_per_tag_obj['close_date'] = transaction_obj['close_date']
+        amount_per_tag_obj['amount_per_tag'] = amount_per_tag
+
+        return amount_per_tag_obj
 
 
 def get_amount_per_tag(transactions_list: list[dict]) -> dict:
@@ -50,12 +55,12 @@ def get_amount_per_tag(transactions_list: list[dict]) -> dict:
     return amount_per_tag_dict
 
 
-def card_bill_add_details_from_card_statement(card_bill: dict):
+def card_bill_add_details_from_card_statement(card_bill: dict, card_statements):
 
     if 'details' in card_bill:
         for transaction in card_bill['details']:
             transaction = transaction_add_details_from_card_statement(
-                transaction)
+                transaction, card_statements)
 
     return card_bill
 

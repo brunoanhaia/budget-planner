@@ -6,7 +6,7 @@ from wrapper.utils.utils import card_bill_add_details_from_card_statement, trans
 import cert_generator
 import pandas as pd
 
-from .utils import ConfigLoader, planify_array, planify_summary_section, group_tags_and_get_amount_from_card_bill
+from .utils import ConfigLoader, planify_array, planify_summary_section, group_tags_and_get_amount_from_transactions
 from datetime import datetime
 from pandas.core.frame import DataFrame
 from pynubank import MockHttpClient, Nubank
@@ -20,6 +20,7 @@ class CachedDataEnum(enum.Enum):
     CardBill = 'card_bills'
     AccountFeed = 'account_feed'
     AccountMonthlySummary = 'account_monthly_summary'
+    CardMonthlyTagAmountSummary = 'card_monthly_tag_amount_summary'
     CardFeed = 'card_feed'
     CardStatements = 'card_statements'
 
@@ -91,7 +92,7 @@ class NuBankWrapper:
         })
 
         FileHelper.save_to_file(self.file_helper.token.path,
-                          self.refresh_token, file_format='')
+                                self.refresh_token, file_format='')
 
         return self.refresh_token
 
@@ -128,34 +129,9 @@ class NuBankWrapper:
 
     def get_card_bills(self, details: bool, save_file: bool = True):
         bills: list[dict] = self.nu.get_bills()
+        amount_per_tag_list: list[dict] = []
+
         for bill in bills:
-
-            # Link bill to user
-            bill['cpf'] = self.user
-
-            # Retrieving the bill details (transactions) from open and closed bills
-            if details and bill['state'] != 'future':
-                bill_detais = self.nu.get_bill_details(bill)['bill']
-                bill['details'] = bill_detais.get('line_items', None)
-                bill['nubank_id'] = bill_detais.get('id', None)
-
-                if '_links' in bill and 'self' in bill['_links'] and 'href' in bill['_links']['self']:
-                    bill['link_href'] = bill['_links']['self']['href']
-
-                for transaction in bill['details']:
-                    transaction['amount'] = transaction['amount']/100
-                    transaction['nubank_id'] = transaction['id']
-                    transaction.pop('id')
-
-                    if 'href' in transaction and 'transaction_id' not in transaction:
-                        transaction['transaction_id'] = transaction['href'].split(
-                            '/')[-1]
-
-                    transaction = transaction_add_details_from_card_statement(
-                        transaction, self.cached_data[CachedDataEnum.CardStatements.value])
-
-                card_bill_add_details_from_card_statement(bill)
-                group_tags_and_get_amount_from_card_bill(bill)
 
             if 'summary' in bill:
                 summary = bill['summary']
@@ -168,7 +144,25 @@ class NuBankWrapper:
                 summary['paid'] = summary['paid']/100
                 summary['minimum_payment'] = summary['minimum_payment']/100
 
-            planify_summary_section(bill)
+                planify_summary_section(bill)
+
+            # Link bill to user
+            bill['cpf'] = self.user
+
+            # Retrieving the bill details (transactions) from open and closed bills
+            if details and bill['state'] != 'future':
+
+                # Simplifying the link_ref from card_bill
+                if '_links' in bill and 'self' in bill['_links'] and 'href' in bill['_links']['self']:
+                    bill['link_href'] = bill['_links']['self']['href']
+
+                transactions_list = self.__get_transactions_from_bill(bill)
+
+                # Get amount per tag in each bill and  and to the list
+                amount_per_tag = group_tags_and_get_amount_from_transactions(
+                    transactions_list)
+                if amount_per_tag is not None:
+                    amount_per_tag_list.append(amount_per_tag)
 
             if save_file:
                 close_date = datetime.strptime(
@@ -181,7 +175,47 @@ class NuBankWrapper:
         # Storing the data in the class instance for future use
         self.cached_data[CachedDataEnum.CardBill.value] = bills
 
+        # Save amount per tag in a file
+        self.file_helper.save_to_file(
+            self.file_helper.card_bill_amount_per_tag.path, amount_per_tag_list)
+
         return bills
+
+    def __get_transactions_from_bill(self, bill: dict):
+        raw_details = self.nu.get_bill_details(bill)['bill']
+        transaction_list = raw_details.get('line_items', None)
+        bill['nubank_id'] = raw_details.get('id', None)
+
+        for transaction in transaction_list:
+            transaction['amount'] = transaction['amount']/100
+            transaction['nubank_id'] = transaction['id']
+            transaction.pop('id')
+
+            if 'href' in transaction and 'transaction_id' not in transaction:
+                transaction['transaction_id'] = transaction['href'].split(
+                    '/')[-1]
+
+            transaction = transaction_add_details_from_card_statement(
+                transaction, self.cached_data[CachedDataEnum.CardStatements.value])
+
+        # bill['details'] = transaction_list
+
+        # Get the ref_date
+        ref_date = datetime.strptime(
+            bill['close_date'], "%Y-%m-%d").strftime("%Y-%m")
+        file_path = self.file_helper.card_bill_transactions.get_custom_path(
+            ref_date)
+
+        # Create the transaction object
+        transaction_obj = {}
+        transaction_obj['ref_date'] = ref_date
+        transaction_obj['close_date'] = bill['close_date']
+        transaction_obj['cpf'] = bill['cpf']
+        transaction_obj['transactions'] = transaction_list
+
+        FileHelper.save_to_file(file_path, transaction_obj)
+
+        return transaction_obj
 
     def retrive_from_cache(self, type: CachedDataEnum) -> list[dict]:
         file_path = getattr(self.file_helper, type.value).get_complete_path()
@@ -224,6 +258,8 @@ class NuBankWrapper:
 
                 statement.pop('details')
 
+        # Storing the data in the class instance for future use
+        self.cached_data[CachedDataEnum.CardStatements.value] = card_statements
         file_path = self.file_helper.card_statements.path
         FileHelper.save_to_file(file_path, card_statements)
 
@@ -242,7 +278,7 @@ class NuBankWrapper:
         self.cached_data[CachedDataEnum.AccountFeed.value] = self.nu.get_account_feed(
         )
         FileHelper.save_to_file(self.file_helper.account_feed.path,
-                          self.cached_data[CachedDataEnum.AccountFeed.value])
+                                self.cached_data[CachedDataEnum.AccountFeed.value])
 
         return self.cached_data[CachedDataEnum.AccountFeed.value]
 
@@ -252,7 +288,7 @@ class NuBankWrapper:
             bill for bill in card_bills if 'details' in bill]
 
         for card_bill in card_bill_with_details:
-            card_bill = group_tags_and_get_amount_from_card_bill(
+            card_bill = group_tags_and_get_amount_from_transactions(
                 card_bill)
 
         self.cached_data[CachedDataEnum.CardBill.value] = card_bills
@@ -304,4 +340,3 @@ class NuBankWrapper:
 
     def sync(self):
         self.database_manager.sync(self.cached_data)
-
