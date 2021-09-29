@@ -1,4 +1,4 @@
-from .models import DeclarativeBase, DatabaseProvider, NuBankCardBill, NuBankAccountMonthlySummary, User
+from .models import DatabaseProvider, NuBankCardBill, NuBankAccountMonthlySummary, User
 
 
 class DatabaseManager:
@@ -17,5 +17,4 @@ class DatabaseManager:
 
     @staticmethod
     def reset():
-        DeclarativeBase.metadata.drop_all(DatabaseProvider.instance().engine)
-        DeclarativeBase.metadata.create_all(DatabaseProvider.instance().engine)
+        pass

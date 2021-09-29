@@ -1,4 +1,6 @@
 
+from ..models import CardBillAmountPerTag, NuBankCardBillTransactions
+
 def planify_array(array: list):
     result = []
     for elem in array:
@@ -22,24 +24,24 @@ def planify_summary_section(values: dict):
     values.pop('summary')
 
 
-def group_tags_and_get_amount_from_transactions(transaction_obj: list[dict]):
+def group_tags_and_get_amount_from_transactions(transaction_obj: NuBankCardBillTransactions) -> CardBillAmountPerTag:
     transactions_with_tag_obj = [
-        transaction for transaction in transaction_obj['transactions'] if 'tags' in transaction]
+        transaction for transaction in transaction_obj.transactions if 'tags' in transaction]
 
     if len(transactions_with_tag_obj) > 0:
-        amount_per_tag = get_amount_per_tag(
+        amount_per_tag = __get_amount_per_tag(
             transactions_with_tag_obj)
 
-        amount_per_tag_obj = {}
-        amount_per_tag_obj['cpf'] = transaction_obj['cpf']
-        amount_per_tag_obj['ref_date'] = transaction_obj['ref_date']
-        amount_per_tag_obj['close_date'] = transaction_obj['close_date']
-        amount_per_tag_obj['amount_per_tag'] = amount_per_tag
+        amount_per_tag_obj = CardBillAmountPerTag()
+        amount_per_tag_obj.cpf = transaction_obj.cpf
+        amount_per_tag_obj.ref_date = transaction_obj.ref_date
+        amount_per_tag_obj.close_date = transaction_obj.close_date
+        amount_per_tag_obj.values = amount_per_tag
 
         return amount_per_tag_obj
 
 
-def get_amount_per_tag(transactions_list: list[dict]) -> dict:
+def __get_amount_per_tag(transactions_list: list[dict]) -> dict:
     amount_per_tag_dict = {}
 
     for transaction in transactions_list:

@@ -3,8 +3,8 @@ from .database_provider import DatabaseProvider
 
 class BaseModel:
     def __init__(self) -> None:
-        self.db_helper = DatabaseProvider.instance()
-
+        pass
+    
     @staticmethod
     def update_all_attributes(base_class, base, current, skip_fields=None):
         if skip_fields is None:
@@ -16,6 +16,9 @@ class BaseModel:
                 attribute_value = getattr(current, k)
                 if getattr(base, k) != attribute_value:
                     setattr(base, k, attribute_value)
+
+    def to_json(self):
+        return self.__dict__
 
     def from_dict(self, values: dict):
         keys = type(self).__dict__.keys()

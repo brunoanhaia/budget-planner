@@ -1,5 +1,5 @@
 from .base_model import BaseModel
-from datetime import date, datetime
+from datetime import date
 
 
 class NuBankAccountMonthlySummary(BaseModel):

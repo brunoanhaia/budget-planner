@@ -1,6 +1,7 @@
 import json
 import os
 import enum
+from wrapper.models import NuBankCardBillTransactions
 from wrapper.utils.utils import card_bill_add_details_from_card_statement, transaction_add_details_from_card_statement
 
 import cert_generator
@@ -162,7 +163,7 @@ class NuBankWrapper:
                 amount_per_tag = group_tags_and_get_amount_from_transactions(
                     transactions_list)
                 if amount_per_tag is not None:
-                    amount_per_tag_list.append(amount_per_tag)
+                    amount_per_tag_list.append(amount_per_tag.to_json())
 
             if save_file:
                 close_date = datetime.strptime(
@@ -181,7 +182,7 @@ class NuBankWrapper:
 
         return bills
 
-    def __get_transactions_from_bill(self, bill: dict):
+    def __get_transactions_from_bill(self, bill: dict) -> NuBankCardBillTransactions:
         raw_details = self.nu.get_bill_details(bill)['bill']
         transaction_list = raw_details.get('line_items', None)
         bill['nubank_id'] = raw_details.get('id', None)
@@ -207,13 +208,13 @@ class NuBankWrapper:
             ref_date)
 
         # Create the transaction object
-        transaction_obj = {}
-        transaction_obj['ref_date'] = ref_date
-        transaction_obj['close_date'] = bill['close_date']
-        transaction_obj['cpf'] = bill['cpf']
-        transaction_obj['transactions'] = transaction_list
+        transaction_obj = NuBankCardBillTransactions()
+        transaction_obj.ref_date = ref_date
+        transaction_obj.close_date = bill['close_date']
+        transaction_obj.cpf = bill['cpf']
+        transaction_obj.transactions = transaction_list
 
-        FileHelper.save_to_file(file_path, transaction_obj)
+        FileHelper.save_to_file(file_path, transaction_obj.to_json())
 
         return transaction_obj
 
