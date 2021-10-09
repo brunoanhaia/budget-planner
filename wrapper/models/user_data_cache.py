@@ -22,6 +22,7 @@ class UserDataCache:
         def __init__(self) -> None:
             self.monthly_summary_list: list[NuBankAccountMonthlySummary] = list()
             self.feed: list[dict] = list()
+            self.statements: list[dict] = list()
 
     def __init__(self):
         self.user: User = None

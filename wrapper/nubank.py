@@ -18,17 +18,6 @@ from wrapper.utils import FileHelper
 from .database_manager import DatabaseManager
 
 
-class CachedDataEnum(enum.Enum):
-    AccountStatements = "account_statements"
-    User = 'user'
-    CardBill = 'card_bills'
-    AccountFeed = 'account_feed'
-    AccountMonthlySummary = 'account_monthly_summary'
-    CardMonthlyTagAmountSummary = 'card_monthly_tag_amount_summary'
-    CardFeed = 'card_feed'
-    CardStatements = 'card_statements'
-
-
 class NuBankWrapper:
 
     def __init__(self, user: User, password="", mock: bool = True, data_dir: str = 'cache'):
@@ -77,7 +66,7 @@ class NuBankWrapper:
             self.user, self.password, self.file_helper.certificate.path)
 
         ConfigLoader.update(os.getenv("CONFIG_FILE"), {
-            'type': CachedDataEnum.User.value,
+            'type': 'user',
             'key': self.user,
             'update_values': {
                 'token': self.refresh_token
@@ -108,7 +97,7 @@ class NuBankWrapper:
         return self.nu.get_account_balance()
 
     def get_account_statements(self, save_file: bool = True):
-        self.cache_data[CachedDataEnum.AccountStatements.value] = self.nu.get_account_statements()
+        self.cache_data.account.statements = self.nu.get_account_statements()
 
         if save_file:
             current_date = datetime.now()
@@ -116,9 +105,9 @@ class NuBankWrapper:
                 current_date.strftime("%Y-%m-%d_%H-%M-%S"))
 
             FileHelper.save_to_file(
-                file_path, self.cache_data[CachedDataEnum.AccountStatements.value])
+                file_path, self.cache_data.account.statements)
 
-        return self.cache_data[CachedDataEnum.AccountStatements.value]
+        return self.cache_data.account.statements
 
     def get_card_bills(self, details: bool, save_file: bool = True):
         raw_data = self.nu.get_bills()
@@ -159,7 +148,8 @@ class NuBankWrapper:
 
         return bills
 
-    def retrive_from_cache(self, type: CachedDataEnum) -> list[dict]:
+    # Todo: Move to base class
+    def retrive_from_cache(self, type: None) -> list[dict]:
         file_path = getattr(self.file_helper, type.value).get_complete_path()
 
         with open(file_path, 'r', encoding='utf8') as f:
@@ -169,6 +159,7 @@ class NuBankWrapper:
 
             return file_content
 
+    # Todo: Move to base class
     def retrieve_card_bill_from_cache(self) -> list[dict]:
         base_path = self.file_helper.card_bill.path
         files_list = self.file_helper.card_bill.files
@@ -201,7 +192,7 @@ class NuBankWrapper:
                 statement.pop('details')
 
         # Storing the data in the class instance for future use
-        self.cache_data[CachedDataEnum.CardStatements.value] = card_statements
+        self.cache_data.card.statements = card_statements
         file_path = self.file_helper.card_statements.path
         FileHelper.save_to_file(file_path, card_statements)
 
@@ -217,19 +208,19 @@ class NuBankWrapper:
         return card_feed
 
     def get_account_feed(self):
-        self.cache_data[CachedDataEnum.AccountFeed.value] = self.nu.get_account_feed(
+        self.cache_data.account.feed = self.nu.get_account_feed(
         )
         FileHelper.save_to_file(self.file_helper.account_feed.path,
-                                self.cache_data[CachedDataEnum.AccountFeed.value])
+                                self.cache_data.account.feed)
 
-        return self.cache_data[CachedDataEnum.AccountFeed.value]
+        return self.cache_data.account.feed
 
     def generate_account_monthly_summary(self) -> dict:
         # It will retrieve new account statements if it wasn't retrieved before.
-        if self.cache_data[CachedDataEnum.AccountStatements.value] is None:
+        if self.cache_data.account.statements is None:
             self.get_account_statements(save_file=True)
 
-        values = self.cache_data[CachedDataEnum.AccountStatements.value]
+        values = self.cache_data.account.statements
 
         # Still not sure why, but i cannot access __typename directly with pandas, so I'm changing it to type only
         for v in values:
@@ -257,14 +248,14 @@ class NuBankWrapper:
         rdf['ref_date'] = rdf["ref_date"].dt.strftime("%Y-%m-%d")
 
         # Converting dataframe to dictionary
-        self.cache_data[CachedDataEnum.AccountMonthlySummary.value] = rdf.to_dict(
+        self.cache_data.account.monthly_summary_list = rdf.to_dict(
             orient='records')
 
         file_path = self.file_helper.account_monthly_summary.path
         FileHelper.save_to_file(
-            file_path, self.cache_data[CachedDataEnum.AccountMonthlySummary.value])
+            file_path, self.cache_data.account.monthly_summary_list)
 
-        return self.cache_data[CachedDataEnum.AccountMonthlySummary.value]
+        return self.cache_data.account.monthly_summary_list
 
     def generate_cert(self, save_file=True):
         cert_generator.run(self.user, self.password, save_file=save_file)
