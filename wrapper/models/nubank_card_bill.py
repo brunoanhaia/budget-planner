@@ -79,7 +79,7 @@ class NuBankCardBill(BaseModel):
     def minimum_payment(self, value):
         self.__minimum_payment = self.round_to_two_decimal(value)
 
-# endregion
+    # endregion
 
     def from_dict(self, values: dict):
         if values != None and 'summary' in values:
@@ -125,8 +125,8 @@ class NuBankCardBill(BaseModel):
         transaction_list = [NuBankCardTransaction(self.cpf).from_dict(
             transaction) for transaction in raw_transaction_list]
 
-        if self.cache_data.card_statements == None or len(self.cache_data.card_statements) == 0:
-            self.cache_data.card_statements = self.nu.get_card_statements()
+        if self.cache_data.card.statements == None or len(self.cache_data.card.statements) == 0:
+            self.cache_data.card.statements = self.nu.get_card_statements()
 
         transaction_list = [transaction.add_details_from_card_statement()
                             for transaction in transaction_list]

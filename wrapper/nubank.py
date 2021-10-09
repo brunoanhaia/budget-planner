@@ -151,7 +151,7 @@ class NuBankWrapper:
                 FileHelper.save_to_file(file_path, bill.to_json())
 
         # Storing the data in the class instance for future use
-        self.cache_data.card_bill_list = bills
+        self.cache_data.card.bill_list = bills
 
         # Save amount per tag in a file
         self.file_helper.save_to_file(
@@ -180,9 +180,9 @@ class NuBankWrapper:
 
                 card_bills_list.append(file_content)
 
-        self.cache_data.card_bill_list = card_bills_list
+        self.cache_data.card.bill_list = card_bills_list
 
-        return self.cache_data.card_bill_list
+        return self.cache_data.card.bill_list
 
     def get_card_statements(self):
         card_statements = self.nu.get_card_statements()
@@ -223,17 +223,6 @@ class NuBankWrapper:
                                 self.cache_data[CachedDataEnum.AccountFeed.value])
 
         return self.cache_data[CachedDataEnum.AccountFeed.value]
-
-    # def generate_card_transactions_by_tag(self):
-    #     card_bills = self.cache_data[CachedDataEnum.CardBill.value]
-    #     card_bill_with_details = [
-    #         bill for bill in card_bills if 'details' in bill]
-
-    #     for card_bill in card_bill_with_details:
-    #         card_bill = group_tags_and_get_amount_from_transactions(
-    #             card_bill)
-
-    #     self.cache_data[CachedDataEnum.CardBill.value] = card_bills
 
     def generate_account_monthly_summary(self) -> dict:
         # It will retrieve new account statements if it wasn't retrieved before.

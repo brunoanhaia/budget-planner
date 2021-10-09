@@ -47,10 +47,10 @@ class NuBankCardTransaction(BaseModel):
     
     def add_details_from_card_statement(self):
 
-        if self.cache_data.card_statements is None and len(self.cache_data.card_statements) > 0:
-            self.cache_data.card_statements = self.nu.get_card_feed()
+        if self.cache_data.card.statements is None and len(self.cache_data.card.statements) > 0:
+            self.cache_data.card.statements = self.nu.get_card_feed()
         
-        card_statements = self.cache_data.card_statements
+        card_statements = self.cache_data.card.statements
 
 
         statement = [statement for statement in card_statements if (
