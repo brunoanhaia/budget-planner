@@ -8,5 +8,9 @@ class CardBillAmountPerTag(BaseModel):
     close_date: date
     values: dict
 
-    def __init__(self) -> None:
-        BaseModel.__init__(self)
+    def __init__(self, cpf = '') -> None:
+        BaseModel.__init__(self, cpf)
+
+        self.ref_date: str = ''
+        self.close_date: date = date.today()
+        self.values: dict = {}

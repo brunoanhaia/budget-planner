@@ -4,16 +4,49 @@ from datetime import date
 
 class NuBankAccountMonthlySummary(BaseModel):
 
-    id: int
-    cpf: str
-    ref_date: date
-    debit: float
-    credit: float
-    total: float
-    balance: float
+    def __init__(self, cpf='') -> None:
+        BaseModel.__init__(self, cpf)
+        self.id: int = None
+        self.ref_date: date = date.today()
+        self._debit: float = 0
+        self._credit: float = 0
+        self._total: float = 0
+        self._balance: float = 0
 
-    def __init__(self) -> None:
-        BaseModel.__init__(self)
+    # region Properties
+    @property
+    def debit(self) -> float:
+        return self._debit
+
+    @debit.setter
+    def debit(self, value: float):
+        self._debit = self.round_to_two_decimal(value)
+
+    @property
+    def credit(self) -> float:
+        return self._credit
+
+    @credit.setter
+    def credit(self, value: float):
+        self._credit = self.round_to_two_decimal(value)
+
+    @property
+    def total(self) -> float:
+        return self._total
+
+    @total.setter
+    def total(self, value: float):
+        self._total = self.round_to_two_decimal(value)
+
+    @property
+    def balance(self) -> float:
+        return self._balance
+
+    @balance.setter
+    def balance(self, value: float):
+        self._balance = self.round_to_two_decimal(value)
+
+    # endregion
 
     def from_dict(self, values: list[dict]):
         self.id = values.get('id', None)
@@ -27,28 +60,5 @@ class NuBankAccountMonthlySummary(BaseModel):
         return self
 
     def sync(self, current_values_list: dict):
-        session = self.db_helper.session
-        base_values = session.query(NuBankAccountMonthlySummary).all()
-
-        for current_value_dict in current_values_list:
-
-            # This get the value if exists
-            query_result = [x for x in base_values if x.ref_date ==
-                            current_value_dict['ref_date'] and x.cpf == current_value_dict['cpf']]
-            current_value = NuBankAccountMonthlySummary().from_dict(current_value_dict)
-
-            if len(query_result) > 0:
-
-                base_value: NuBankAccountMonthlySummary = query_result[0]
-
-                self.update_all_attributes(
-                    NuBankAccountMonthlySummary, base_value, current_value)
-                session.add(base_value)
-
-                print(f'{base_value.ref_date} has been updated')
-
-            else:
-                session.add(current_value)
-                print(f'{current_value.ref_date} has been added')
-
-        session.commit()
+        # Todo: Refactor this method to update the current values in the worksheet with the new values.
+        pass

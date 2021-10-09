@@ -1,4 +1,4 @@
-from .models import DatabaseProvider, NuBankCardBill, NuBankAccountMonthlySummary, User
+from .models import NuBankCardBill, NuBankAccountMonthlySummary, User
 
 
 class DatabaseManager:
