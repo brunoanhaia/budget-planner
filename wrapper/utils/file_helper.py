@@ -62,7 +62,7 @@ class FileHelper:
             os.makedirs(dirname)
 
         with open(os.path.join(dirname, name), 'w+', encoding='utf-8') as outfile:
-            json.dump(content, outfile, ensure_ascii=False, indent='\t', default=lambda x: x.to_json())
+            json.dump(content, outfile, ensure_ascii=False, indent='\t', default=lambda x: x.to_dict())
             print(f'Saved to {file_name}')
 
     def __from_base_dir(self, path: str):

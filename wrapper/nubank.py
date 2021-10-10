@@ -1,7 +1,6 @@
 import json
 import os
-import enum
-from wrapper.models import User, UserDataCache
+from wrapper.models import User
 from wrapper.models.nubank_card_bill import NuBankCardBill
 from wrapper.providers import NuBankApiProvider
 from wrapper.providers.cache_data_provider import CacheDataProvider
@@ -129,7 +128,7 @@ class NuBankWrapper:
                 # Get amount per tag in each bill and  and to the list
                 amount_per_tag = transactions_list.group_tags_and_get_amount_from_transactions()
                 if amount_per_tag is not None:
-                    amount_per_tag_list.append(amount_per_tag.to_json())
+                    amount_per_tag_list.append(amount_per_tag.to_dict())
 
             if save_file:
                 close_date = datetime.strptime(
@@ -137,7 +136,7 @@ class NuBankWrapper:
                 file_path = self.file_helper.card_bill.get_custom_path(
                     close_date.strftime("%Y-%m"))
 
-                FileHelper.save_to_file(file_path, bill.to_json())
+                FileHelper.save_to_file(file_path, bill.to_dict())
 
         # Storing the data in the class instance for future use
         self.cache_data.card.bill_list = bills

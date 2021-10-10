@@ -15,15 +15,16 @@ class BaseModel:
         self.file_helper = FileHelper(cpf)
         self.db_helper = DatabaseProvider.instance()
         self.nu = NuBankApiProvider.instance().nu
+        self.__cpf = ''
         self.cpf = cpf
 
     @property
     def cpf(self) -> str:
-        return self._user_cpf
+        return self.__cpf
 
     @cpf.setter
     def cpf(self, value: str):
-        self._user_cpf = value
+        self.__cpf = value
         self.file_helper = FileHelper(value)
 
     @staticmethod
@@ -46,20 +47,26 @@ class BaseModel:
         df = pd.DataFrame.from_dict(self.__class__.__dict__)
         current_worksheet.set_dataframe(df, start='A1')
 
-    def to_json(self) -> dict:
+    def to_dict(self) -> dict:
         obj_dict = copy.copy(self.__dict__)
+        cls_name = self.__class__.__name__
+        cls_parent_name = self.__class__.__base__.__name__
 
-        keys_with_underscore = [key for key in obj_dict if key.startswith(
-            '_') or type(obj_dict[key]) not in [str, int, float, bool, list, dict]]
-        [obj_dict.pop(key) for key in keys_with_underscore]
+        forbidden_keys = [key for key in obj_dict if type(obj_dict[key]) not in [str, int, float, bool, list, dict]]
+        [obj_dict.pop(key) for key in forbidden_keys]
+
+        property_keys = [key for key in obj_dict if key.startswith(f'_{cls_name}_') or key.startswith(f'_{cls_parent_name}_')]
+        for key in property_keys:
+            new_key = key.split('__')[-1]
+            obj_dict[new_key] = obj_dict[key]
+            obj_dict.pop(key)
 
         return obj_dict
 
     def from_dict(self, values: dict):
-        # Get keys from the class and remove private ones
-        keys = [key for key in self.__dict__.keys() if not key.startswith('_')]
+        obj_dict = self.to_dict()
 
-        for key in keys:
+        for key in obj_dict:
             dict_value = values.get(key, None)
             value_type = type(dict_value)
 
@@ -70,4 +77,7 @@ class BaseModel:
 
     @classmethod
     def round_to_two_decimal(self, value) -> float:
+        if type(value) == str:
+            value = float(value)
+        
         return round(value, 2)

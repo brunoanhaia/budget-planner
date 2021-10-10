@@ -98,12 +98,14 @@ class NuBankCardBillTransactions(BaseModel):
 
         for transaction in transactions_list:
             tags = planify_array(transaction.tags)
-            amount = transaction.amount
+            amount = self.round_to_two_decimal(transaction.amount)
 
             for tag in tags:
                 if tag in amount_per_tag_dict:
                     amount_per_tag_dict[tag] += amount
                 else:
                     amount_per_tag_dict[tag] = amount
+                
+                amount_per_tag_dict[tag] = self.round_to_two_decimal(amount_per_tag_dict[tag])
 
         return amount_per_tag_dict
