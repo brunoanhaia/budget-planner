@@ -216,7 +216,7 @@ class NuBankWrapper:
 
     def generate_account_monthly_summary(self) -> dict:
         # It will retrieve new account statements if it wasn't retrieved before.
-        if self.cache_data.account.statements is None:
+        if self.cache_data.account.statements is None or len(self.cache_data.account.statements) == 0:
             self.get_account_statements(save_file=True)
 
         values = self.cache_data.account.statements
@@ -237,7 +237,7 @@ class NuBankWrapper:
             {'credit': 'sum', 'debit': 'sum'})
         rdf['balance'] = rdf.credit - rdf.debit
         rdf['total'] = rdf['balance'].cumsum()
-        rdf['cpf'] = self.user
+        rdf['cpf'] = self.user.cpf
 
         # Rounding everything with 2 decimal places
         rdf = rdf.round(2)
