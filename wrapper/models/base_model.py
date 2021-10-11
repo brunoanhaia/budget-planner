@@ -70,7 +70,7 @@ class BaseModel:
             dict_value = values.get(key, None)
             value_type = type(dict_value)
 
-            if value_type not in [dict, list] and dict_value is not None:
+            if value_type not in [list] and dict_value is not None:
                 self.__setattr__(key, dict_value)
 
         return self

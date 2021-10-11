@@ -1,7 +1,6 @@
 import json
 import os
-from wrapper.models import User
-from wrapper.models.nubank_card_bill import NuBankCardBill
+from wrapper.models import AccountStatement, NuBankCardBill, User
 from wrapper.providers import NuBankApiProvider
 from wrapper.providers.cache_data_provider import CacheDataProvider
 from wrapper.utils.utils import card_bill_add_details_from_card_statement, transaction_add_details_from_card_statement
@@ -96,7 +95,11 @@ class NuBankWrapper:
         return self.nu.get_account_balance()
 
     def get_account_statements(self, save_file: bool = True):
-        self.cache_data.account.statements = self.nu.get_account_statements()
+        raw_account_transactions = self.nu.get_account_statements()
+
+        account_statement_obj = AccountStatement(self.user.cpf).from_transactions_dict(raw_account_transactions)
+
+        self.cache_data.account.statements = account_statement_obj
 
         if save_file:
             current_date = datetime.now()
@@ -213,49 +216,7 @@ class NuBankWrapper:
                                 self.cache_data.account.feed)
 
         return self.cache_data.account.feed
-
-    def generate_account_monthly_summary(self) -> dict:
-        # It will retrieve new account statements if it wasn't retrieved before.
-        if self.cache_data.account.statements is None or len(self.cache_data.account.statements) == 0:
-            self.get_account_statements(save_file=True)
-
-        values = self.cache_data.account.statements
-
-        # Still not sure why, but i cannot access __typename directly with pandas, so I'm changing it to type only
-        for v in values:
-            v['type'] = v['__typename']
-
-        df = pd.DataFrame.from_dict(values)
-
-        # Transforming string to datetime for easy grouping
-        df['ref_date'] = pd.to_datetime(df['postDate'], format='%Y-%m-%d')
-        df.loc[df.type == 'TransferInEvent', "credit"] = df.amount
-        df.loc[df.type != 'TransferInEvent', "debit"] = df.amount
-
-        # Resampling data and grouping by ref_date
-        rdf: DataFrame = df.resample('MS', on='ref_date').agg(
-            {'credit': 'sum', 'debit': 'sum'})
-        rdf['balance'] = rdf.credit - rdf.debit
-        rdf['total'] = rdf['balance'].cumsum()
-        rdf['cpf'] = self.user.cpf
-
-        # Rounding everything with 2 decimal places
-        rdf = rdf.round(2)
-
-        # Transforming the ref_date index back to column and to the appropriate format
-        rdf.reset_index(inplace=True)
-        rdf['ref_date'] = rdf["ref_date"].dt.strftime("%Y-%m-%d")
-
-        # Converting dataframe to dictionary
-        self.cache_data.account.monthly_summary_list = rdf.to_dict(
-            orient='records')
-
-        file_path = self.file_helper.account_monthly_summary.path
-        FileHelper.save_to_file(
-            file_path, self.cache_data.account.monthly_summary_list)
-
-        return self.cache_data.account.monthly_summary_list
-
+    
     def generate_cert(self, save_file=True):
         cert_generator.run(self.user, self.password, save_file=save_file)
 

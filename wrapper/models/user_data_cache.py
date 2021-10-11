@@ -1,4 +1,5 @@
 
+from .account_statement import AccountStatement
 from .nubank_account_monthly_summary import NuBankAccountMonthlySummary
 from .nubank_card_bill import NuBankCardBill
 from .nubank_card_bill_amount_per_tag import CardBillAmountPerTag
@@ -22,7 +23,7 @@ class UserDataCache:
         def __init__(self) -> None:
             self.monthly_summary_list: list[NuBankAccountMonthlySummary] = list()
             self.feed: list[dict] = list()
-            self.statements: list[dict] = list()
+            self.statements: AccountStatement = None
 
     def __init__(self):
         self.user: User = None

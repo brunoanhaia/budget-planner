@@ -1,5 +1,3 @@
-
-
 def planify_array(array: list[str]):
     result = []
     for elem in array:
