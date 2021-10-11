@@ -1,6 +1,7 @@
 from datetime import datetime
 from .base_model import BaseModel
-from .nubank_card_transaction import NuBankCardBillTransactions, NuBankCardTransaction
+from .nubank_card_transaction import NuBankCardBillTransactions, \
+    NuBankCardTransaction
 
 
 class NuBankCardBill(BaseModel):
@@ -82,11 +83,11 @@ class NuBankCardBill(BaseModel):
     # endregion
 
     def from_dict(self, values: dict):
-        if values != None and 'summary' in values:
+        if values is not None and 'summary' in values:
             summary = values['summary']
 
-            # By default, nubank api provide the values as integers, so we need to convert and divide the value
-            # by 100.
+            # By default, nubank api provide the values as integers, so we
+            # need to convert and divide the value by 100.
             summary['past_balance'] = summary.get('past_balance', 0)/100
             summary['total_balance'] = summary.get('total_balance', 0)/100
             summary['total_cumulative'] = summary.get(
@@ -97,14 +98,17 @@ class NuBankCardBill(BaseModel):
             self.__planify_summary_section(values)
 
         # Simplifying the link_ref from card_bill
-        if '_links' in values and 'self' in values['_links'] and 'href' in values['_links']['self']:
+        if '_links' in values and 'self' in values['_links'] and \
+                'href' in values['_links']['self']:
+
             values['link_href'] = values['_links']['self']['href']
             values.pop('_links')
 
         return BaseModel.from_dict(self, values)
 
     def sync(self, values: list[dict]):
-        # Todo: Refactor this method to update the current values in the worksheet with the new values.
+        # Todo: Refactor this method to update the current values in the
+        # worksheet with the new values.
         pass
 
     def __planify_summary_section(self, values: dict):
@@ -125,7 +129,8 @@ class NuBankCardBill(BaseModel):
         transaction_list = [NuBankCardTransaction(self.cpf).from_dict(
             transaction) for transaction in raw_transaction_list]
 
-        if self.cache_data.card.statements == None or len(self.cache_data.card.statements) == 0:
+        if self.cache_data.card.statements is None or \
+           len(self.cache_data.card.statements) == 0:
             self.cache_data.card.statements = self.nu.get_card_statements()
 
         transaction_list = [transaction.add_details_from_card_statement()

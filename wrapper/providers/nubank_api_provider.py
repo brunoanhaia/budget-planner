@@ -1,5 +1,6 @@
 from pynubank import Nubank
 
+
 class NuBankApiProvider:
     _instance = None
 

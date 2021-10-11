@@ -1,6 +1,7 @@
 from datetime import date
 from .base_model import BaseModel
 
+
 class CardBillAmountPerTag(BaseModel):
 
     cpf: str
@@ -8,7 +9,7 @@ class CardBillAmountPerTag(BaseModel):
     close_date: date
     values: dict
 
-    def __init__(self, cpf = '') -> None:
+    def __init__(self, cpf='') -> None:
         BaseModel.__init__(self, cpf)
 
         self.ref_date: str = ''

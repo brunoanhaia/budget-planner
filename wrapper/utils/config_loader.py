@@ -15,7 +15,7 @@ class ConfigLoader:
             json.dump(json_content, outfile, ensure_ascii=False, indent='\t')
 
     @staticmethod
-    def update (path: str, update_dict: dict):
+    def update(path: str, update_dict: dict):
         config_content = ConfigLoader.load(path)
 
         update_type = update_dict.get('type', None)
@@ -27,6 +27,7 @@ class ConfigLoader:
             for user in config_content['users']:
                 if user['cpf'] == cpf:
                     for update_value_key in update_values:
-                       user[update_value_key] = update_values[update_value_key]
+                        user[update_value_key] = \
+                            update_values[update_value_key]
 
         ConfigLoader.save(path, config_content)

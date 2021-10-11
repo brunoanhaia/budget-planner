@@ -10,7 +10,8 @@ from .database_manager import DatabaseManager
 
 class NuBankWrapper:
 
-    def __init__(self, user: User, password="", mock: bool = True, data_dir: str = 'cache'):
+    def __init__(self, user: User, password="", mock: bool = True,
+                 data_dir: str = 'cache'):
         self.cache_data = CacheDataProvider.instance().current
         self.mock = mock
         self.user: User = user
@@ -24,13 +25,13 @@ class NuBankWrapper:
 
     @property
     def user(self):
-        if self.cache_data.user != None:
+        if self.cache_data.user is not None:
             return self.cache_data.user
         return User()
 
     @user.setter
     def user(self, value: User):
-        if self.cache_data.user == None:
+        if self.cache_data.user is None:
             self.cache_data.user = User(value.cpf, value.nickname)
 
         self.file_helper = FileHelper(value.cpf)
@@ -41,12 +42,14 @@ class NuBankWrapper:
 
     def authenticate_with_qr_code(self):
         if self.mock:
-            return self.nu.authenticate_with_qr_code(self.user, self.password, "qualquer-coisa")
+            return self.nu.authenticate_with_qr_code(self.user, self.password,
+                                                     "qualquer-coisa")
         else:
             uuid, qr_code = self.nu.get_qr_code()
             qr_code.print_ascii(invert=True)
             input('Apos escanear o QRCode pressione enter para continuar')
-            return self.nu.authenticate_with_qr_code(self.user, self.password, uuid)
+            return self.nu.authenticate_with_qr_code(self.user, self.password,
+                                                     uuid)
 
     def authenticate_with_certificate(self):
         if self.password is None or self.password == '':
@@ -74,7 +77,8 @@ class NuBankWrapper:
             refresh_token = json.load(refresh_file)
             cert_path = self.file_helper.certificate.path
 
-            return self.nu.authenticate_with_refresh_token(refresh_token, cert_path)
+            return self.nu.authenticate_with_refresh_token(refresh_token,
+                                                           cert_path)
 
     def authenticate_with_token_string(self, token: str):
         try:
@@ -92,22 +96,24 @@ class NuBankWrapper:
     def get_card_bills(self, details: bool, save_file: bool = True):
         raw_data = self.nu.get_bills()
 
-        bills: list[NuBankCardBill] = [NuBankCardBill().from_dict(card_bill) for card_bill in raw_data]
+        bills: list[NuBankCardBill] = [NuBankCardBill().from_dict(card_bill)
+                                       for card_bill in raw_data]
 
         amount_per_tag_list: list[dict] = []
 
         for bill in bills:
-            
+
             # Link bill to user
             bill.cpf = self.user.cpf
 
-            # Retrieving the bill details (transactions) from open and closed bills
+            # Retrieving the bill details (transactions) from open and closed
+            # bills
             if details and bill.state != 'future':
 
                 transactions_list = bill.get_transactions()
 
                 # Get amount per tag in each bill and  and to the list
-                amount_per_tag = transactions_list.group_tags_and_get_amount_from_transactions()
+                amount_per_tag = transactions_list.group_tags_amount()
                 if amount_per_tag is not None:
                     amount_per_tag_list.append(amount_per_tag.to_dict())
 
@@ -124,7 +130,8 @@ class NuBankWrapper:
 
         # Save amount per tag in a file
         self.file_helper.save_to_file(
-            self.file_helper.card_bill_amount_per_tag.path, amount_per_tag_list)
+            self.file_helper.card_bill_amount_per_tag.path,
+            amount_per_tag_list)
 
         return bills
 
@@ -146,7 +153,9 @@ class NuBankWrapper:
         card_bills_list = []
 
         for file in files_list:
-            with open(os.path.join(base_path, file), 'r', encoding='utf8') as f:
+            with open(os.path.join(base_path, file), 'r',
+                      encoding='utf8') as f:
+
                 file_content = json.load(f)
 
                 card_bills_list.append(file_content)
@@ -164,8 +173,10 @@ class NuBankWrapper:
                     statement[key] = statement['details'][key]
 
                     if type(statement[key]) is dict and key == 'charges':
-                        statement[key]['charge_amount'] = statement[key]['amount']/100
-                        statement[key]['total_amount'] = statement['amount']/100
+                        statement[key]['charge_amount'] = \
+                            statement[key]['amount']/100
+                        statement[key]['total_amount'] = \
+                            statement['amount']/100
 
                         statement[key].pop('amount')
 
@@ -194,7 +205,7 @@ class NuBankWrapper:
                                 self.cache_data.account.feed)
 
         return self.cache_data.account.feed
-    
+
     def generate_cert(self, save_file=True):
         cert_generator.run(self.user, self.password, save_file=save_file)
 

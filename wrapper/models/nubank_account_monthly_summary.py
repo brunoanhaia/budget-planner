@@ -60,5 +60,6 @@ class NuBankAccountMonthlySummary(BaseModel):
         return self
 
     def sync(self, current_values_list: dict):
-        # Todo: Refactor this method to update the current values in the worksheet with the new values.
+        # Todo: Refactor this method to update the current values in the
+        # worksheet with the new values.
         pass

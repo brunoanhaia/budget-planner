@@ -10,7 +10,7 @@ from .user import User
 class UserDataCache:
 
     class CardData:
-        
+
         def __init__(self) -> None:
             self.feed: list[dict] = []
             self.statements: list[dict] = []
@@ -19,9 +19,10 @@ class UserDataCache:
             self.transaction_list: list[NuBankCardBillTransactions] = list()
 
     class AccountData:
-        
+
         def __init__(self) -> None:
-            self.monthly_summary_list: list[NuBankAccountMonthlySummary] = list()
+            self.monthly_summary_list: list[NuBankAccountMonthlySummary] = \
+                list()
             self.feed: list[dict] = list()
             self.statements: AccountStatement = None
 
@@ -29,4 +30,3 @@ class UserDataCache:
         self.user: User = None
         self.card = self.CardData()
         self.account = self.AccountData()
-

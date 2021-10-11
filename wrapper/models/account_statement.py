@@ -31,8 +31,9 @@ class AccountStatement(BaseModel):
     def generate_account_monthly_summary(self) -> dict:
         # It will retrieve new account statements if it wasn't retrieved
         # before.
-        if self.cache_data.account.statements is None \
-                or len(self.cache_data.account.statements.transactions_list) == 0:
+        if self.cache_data.account.statements is None or \
+           len(self.cache_data.account.statements.transactions_list) == 0:
+
             self.get_data()
 
         values = self.cache_data.account.statements.transactions_list

@@ -52,10 +52,15 @@ class BaseModel:
         cls_name = self.__class__.__name__
         cls_parent_name = self.__class__.__base__.__name__
 
-        forbidden_keys = [key for key in obj_dict if type(obj_dict[key]) not in [str, int, float, bool, list, dict]]
+        forbidden_keys = [key for key in obj_dict if
+                          type(obj_dict[key]) not in
+                          [str, int, float, bool, list, dict]]
         [obj_dict.pop(key) for key in forbidden_keys]
 
-        property_keys = [key for key in obj_dict if key.startswith(f'_{cls_name}_') or key.startswith(f'_{cls_parent_name}_')]
+        property_keys = [key for key in obj_dict if
+                         key.startswith(f'_{cls_name}_') or
+                         key.startswith(f'_{cls_parent_name}_')]
+
         for key in property_keys:
             new_key = key.split('__')[-1]
             obj_dict[new_key] = obj_dict[key]
@@ -79,5 +84,5 @@ class BaseModel:
     def round_to_two_decimal(self, value) -> float:
         if type(value) == str:
             value = float(value)
-        
+
         return round(value, 2)

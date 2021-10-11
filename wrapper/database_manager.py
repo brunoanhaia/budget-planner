@@ -4,7 +4,7 @@ from .models import NuBankCardBill, NuBankAccountMonthlySummary, User
 class DatabaseManager:
     @staticmethod
     def sync(data: dict):
-        
+
         class_map = {
             'user': User(),
             'card_bills': NuBankCardBill(),
