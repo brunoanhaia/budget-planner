@@ -1,23 +1,44 @@
-import pandas as pd
 from datetime import date
+
+import pandas as pd
 from pandas.core.frame import DataFrame
 from wrapper.models.base_model import BaseModel
 
 
 class AccountStatement(BaseModel):
 
-    def __init__(self, cpf = ''):
+    def __init__(self, cpf=''):
         super().__init__(cpf)
         self.transactions_list: list[self.Transaction] = []
 
+    def get_data(self):
+        raw_account_transactions = self.nu.get_account_statements()
+
+        account_statement_obj = \
+            self.from_transactions_dict(raw_account_transactions)
+
+        self.cache_data.account.statements = account_statement_obj
+
+        current_date = date.today()
+        file_path = self.file_helper.account_statement.get_custom_path(
+            current_date.strftime("%Y-%m-%d_%H-%M-%S"))
+
+        self.file_helper.save_to_file(
+            file_path, self.cache_data.account.statements)
+
+        return self.cache_data.account.statements
+
     def generate_account_monthly_summary(self) -> dict:
-        # It will retrieve new account statements if it wasn't retrieved before.
-        if self.cache_data.account.statements is None or len(self.cache_data.account.statements.transactions_list) == 0:
-            self.get_account_statements(save_file=True)
+        # It will retrieve new account statements if it wasn't retrieved
+        # before.
+        if self.cache_data.account.statements is None \
+                or len(self.cache_data.account.statements.transactions_list) == 0:
+            self.get_data()
 
         values = self.cache_data.account.statements.transactions_list
 
-        # Still not sure why, but i cannot access __typename directly with pandas, so I'm changing it to type only
+        # Still not sure why, but i cannot access __typename directly with
+        # pandas, so I'm changing it to type only
         for v in values:
             v['type'] = v['__typename']
 
@@ -38,7 +59,8 @@ class AccountStatement(BaseModel):
         # Rounding everything with 2 decimal places
         rdf = rdf.round(2)
 
-        # Transforming the ref_date index back to column and to the appropriate format
+        # Transforming the ref_date index back to column and to the
+        # appropriate format
         rdf.reset_index(inplace=True)
         rdf['ref_date'] = rdf["ref_date"].dt.strftime("%Y-%m-%d")
 
@@ -64,10 +86,12 @@ class AccountStatement(BaseModel):
         for transaction in transactions:
             for property in raw_property_map:
                 if property in transaction:
-                    transaction[raw_property_map[property]] = transaction[property]
+                    transaction[raw_property_map[property]
+                                ] = transaction[property]
                     del transaction[property]
 
-        self.transactions_list = [self.Transaction(self.cpf).from_dict(transaction) for transaction in transactions]
+        self.transactions_list = [self.Transaction(self.cpf).from_dict(
+            transaction) for transaction in transactions]
         return self
 
     class Transaction(BaseModel):
@@ -100,7 +124,7 @@ class AccountStatement(BaseModel):
                 value = value['name']
 
             self.__origin_account = value
-        
+
         @property
         def destination_account(self):
             return self.__destination_account

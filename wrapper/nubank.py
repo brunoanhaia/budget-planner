@@ -1,18 +1,10 @@
 import json
 import os
-from wrapper.models import AccountStatement, NuBankCardBill, User
-from wrapper.providers import NuBankApiProvider
-from wrapper.providers.cache_data_provider import CacheDataProvider
-from wrapper.utils.utils import card_bill_add_details_from_card_statement, transaction_add_details_from_card_statement
-
 import cert_generator
-import pandas as pd
-
-from .utils import ConfigLoader, planify_array
 from datetime import datetime
-from pandas.core.frame import DataFrame
-from pynubank import MockHttpClient, Nubank
-from wrapper.utils import FileHelper
+from .models import AccountStatement, NuBankCardBill, User
+from .providers import NuBankApiProvider, CacheDataProvider
+from .utils import ConfigLoader, FileHelper
 from .database_manager import DatabaseManager
 
 
@@ -95,21 +87,7 @@ class NuBankWrapper:
         return self.nu.get_account_balance()
 
     def get_account_statements(self, save_file: bool = True):
-        raw_account_transactions = self.nu.get_account_statements()
-
-        account_statement_obj = AccountStatement(self.user.cpf).from_transactions_dict(raw_account_transactions)
-
-        self.cache_data.account.statements = account_statement_obj
-
-        if save_file:
-            current_date = datetime.now()
-            file_path = self.file_helper.account_statement.get_custom_path(
-                current_date.strftime("%Y-%m-%d_%H-%M-%S"))
-
-            FileHelper.save_to_file(
-                file_path, self.cache_data.account.statements)
-
-        return self.cache_data.account.statements
+        return AccountStatement(self.user.cpf).get_data()
 
     def get_card_bills(self, details: bool, save_file: bool = True):
         raw_data = self.nu.get_bills()

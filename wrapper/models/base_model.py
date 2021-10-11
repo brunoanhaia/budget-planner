@@ -1,11 +1,11 @@
+import copy
+
 import pandas as pd
 from pygsheets.exceptions import WorksheetNotFound
 from pygsheets.worksheet import Worksheet
-import copy
-
 from wrapper.utils.file_helper import FileHelper
 
-from ..providers import DatabaseProvider, NuBankApiProvider, CacheDataProvider
+from ..providers import CacheDataProvider, DatabaseProvider, NuBankApiProvider
 
 
 class BaseModel:
