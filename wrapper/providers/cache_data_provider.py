@@ -2,8 +2,7 @@ class CacheDataProvider:
     _instance = None
 
     def __init__(self) -> None:
-        from ..models import UserDataCache
-        self.current = UserDataCache()
+        self.current = None
 
     @classmethod
     def instance(cls):

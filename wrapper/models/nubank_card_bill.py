@@ -1,4 +1,5 @@
 from datetime import datetime
+
 from .base_model import BaseModel
 from .nubank_card_transaction import NuBankCardBillTransactions, \
     NuBankCardTransaction
@@ -100,7 +101,6 @@ class NuBankCardBill(BaseModel):
         # Simplifying the link_ref from card_bill
         if '_links' in values and 'self' in values['_links'] and \
                 'href' in values['_links']['self']:
-
             values['link_href'] = values['_links']['self']['href']
             values.pop('_links')
 
@@ -111,7 +111,8 @@ class NuBankCardBill(BaseModel):
         # worksheet with the new values.
         pass
 
-    def __planify_summary_section(self, values: dict):
+    @staticmethod
+    def __planify_summary_section(values: dict):
 
         # Iterate over each key in the summary dictionary
         for key in values['summary']:

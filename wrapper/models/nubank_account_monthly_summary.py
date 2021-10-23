@@ -1,5 +1,6 @@
-from .base_model import BaseModel
 from datetime import date
+
+from .base_model import BaseModel
 
 
 class NuBankAccountMonthlySummary(BaseModel):
@@ -48,7 +49,7 @@ class NuBankAccountMonthlySummary(BaseModel):
 
     # endregion
 
-    def from_dict(self, values: list[dict]):
+    def from_dict(self, values: dict[str, object]):
         self.id = values.get('id', None)
         self.cpf = values.get('cpf', None)
         self.ref_date = values.get('ref_date', 0)

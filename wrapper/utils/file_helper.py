@@ -1,6 +1,6 @@
-from dataclasses import dataclass
 import json
 import os
+from dataclasses import dataclass
 
 ACCOUNT_FEED = 'account_feed'
 ACCOUNT_STATEMENT_FILE = 'account_statement'

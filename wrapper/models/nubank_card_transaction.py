@@ -1,7 +1,8 @@
 from datetime import date
-from wrapper.models.base_model import BaseModel
-from wrapper.models.nubank_card_bill_amount_per_tag import CardBillAmountPerTag
+
 from wrapper.utils import planify_array
+from .base_model import BaseModel
+from .nubank_card_bill_amount_per_tag import CardBillAmountPerTag
 
 
 class NuBankCardTransaction(BaseModel):
@@ -73,7 +74,7 @@ class NuBankCardBillTransactions(BaseModel):
         super().__init__()
         self.ref_date: str = ''
         self.close_date: date = date.min
-        self.transactions: list[NuBankCardTransaction] = {}
+        self.transactions: list[NuBankCardTransaction] = []
 
     def group_tags_amount(self) -> CardBillAmountPerTag:
         transactions_with_tag_obj = [

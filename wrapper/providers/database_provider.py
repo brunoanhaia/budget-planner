@@ -1,5 +1,7 @@
 import pygsheets
 from pygsheets import Spreadsheet
+from pygsheets.exceptions import SpreadsheetNotFound, WorksheetNotFound
+from pygsheets.worksheet import Worksheet
 
 
 class DatabaseProvider:
@@ -20,9 +22,17 @@ class DatabaseProvider:
 
     def __init_default_sheet(self):
         # Todo: check if sheet exists and move sheet name to constant
-        self.__default_sheet = self.client.create(
-            'expense-manager/expense_manager')
+        try:
+            self.__default_sheet = self.client.open_by_key('1AIj61NNfIjpnhUodnR0QMdCih7En6o5KZwirsxgN30c')
+        except SpreadsheetNotFound:
+            self.__default_sheet = self.client.create('expense-manager', None, None, 'expense-manager')
 
     @property
     def default_sheet(self) -> Spreadsheet:
         return self.__default_sheet
+
+    def get_worksheet(self, name, property='title') -> Worksheet:
+        try:
+            return self.default_sheet.worksheet(property, name)
+        except WorksheetNotFound:
+            return self.default_sheet.add_worksheet(name, src_tuple=('1AIj61NNfIjpnhUodnR0QMdCih7En6o5KZwirsxgN30c', 0))

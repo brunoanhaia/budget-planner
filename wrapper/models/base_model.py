@@ -1,18 +1,20 @@
 import copy
+from abc import abstractmethod
+from datetime import date, datetime
 
 import pandas as pd
-from pygsheets.exceptions import WorksheetNotFound
+from pygsheets.exceptions import PyGsheetsException, WorksheetNotFound
 from pygsheets.worksheet import Worksheet
-from wrapper.utils.file_helper import FileHelper
+from wrapper.providers.database_provider import DatabaseProvider
+from wrapper.providers.cache_data_provider import CacheDataProvider
+from wrapper.providers.nubank_api_provider import NuBankApiProvider
 
-from ..providers import CacheDataProvider, DatabaseProvider, NuBankApiProvider
 
+class Base:
 
-class BaseModel:
-
-    def __init__(self, cpf: str = '') -> None:
+    def __init__(self, cpf: str) -> None:
         self.cache_data = CacheDataProvider.instance().current
-        self.file_helper = FileHelper(cpf)
+        self.file_helper = None
         self.db_helper = DatabaseProvider.instance()
         self.nu = NuBankApiProvider.instance().nu
         self.__cpf = ''
@@ -24,8 +26,72 @@ class BaseModel:
 
     @cpf.setter
     def cpf(self, value: str):
+        from wrapper.utils.file_helper import FileHelper
+
         self.__cpf = value
         self.file_helper = FileHelper(value)
+
+
+class BaseList(Base):
+
+    __sheet_name__: str
+
+    def __init__(self, cpf: str) -> None:
+        super().__init__(cpf)
+
+    @abstractmethod
+    def get_file_path(self):
+        pass
+
+    @abstractmethod
+    def get_list(self):
+        pass
+
+    def save_file(self):
+        file_path = self.get_file_path()
+
+        self.file_helper.save_to_file(file_path, self.get_list())
+
+    def set_sheets_data(self, get_data_method):
+
+        try:
+            worksheet: Worksheet = self.db_helper \
+                                .get_worksheet(self.__sheet_name__)
+
+            list_obj = getattr(self, get_data_method)()
+            df = pd.DataFrame \
+                .from_dict(list_obj)
+
+            current_sheets_data = self.__get_sheets_data(current_cpf=False)
+            current_sheets_data = current_sheets_data.append(df,
+                                                             ignore_index=True)
+
+            worksheet.clear()
+            worksheet.set_dataframe(current_sheets_data, start='A1')
+
+            return True
+
+        except PyGsheetsException:
+            return False
+
+    def __get_sheets_data(self, current_cpf: bool = True):
+        worksheet: Worksheet = self.db_helper \
+                               .get_worksheet(self.__sheet_name__)
+
+        df = worksheet.get_as_df()
+
+        if current_cpf:
+            result_df = df[df['cpf'].astype(str) == self.cpf]
+        else:
+            result_df = df[df['cpf'].astype(str) != self.cpf]
+
+        return result_df
+
+
+class BaseModel(Base):
+
+    def __init__(self, cpf: str = '') -> None:
+        Base.__init__(self, cpf)
 
     @staticmethod
     def update_all_attributes(base_class, base, current, skip_fields=None):
@@ -34,8 +100,6 @@ class BaseModel:
 
     def sync_base(self):
         current_worksheet_name = self.__class__.__name__
-
-        current_worksheet: Worksheet = None
 
         try:
             current_worksheet = self.db_helper.default_sheet.worksheet(
@@ -54,7 +118,7 @@ class BaseModel:
 
         forbidden_keys = [key for key in obj_dict if
                           type(obj_dict[key]) not in
-                          [str, int, float, bool, list, dict]]
+                          [str, int, float, bool, list, dict, date, datetime]]
         [obj_dict.pop(key) for key in forbidden_keys]
 
         property_keys = [key for key in obj_dict if
@@ -81,7 +145,7 @@ class BaseModel:
         return self
 
     @classmethod
-    def round_to_two_decimal(self, value) -> float:
+    def round_to_two_decimal(cls, value) -> float:
         if type(value) == str:
             value = float(value)
 
