@@ -60,7 +60,7 @@ for user in config['users']:
     if not args.from_cache:
         nu.authenticate_with_token_string(user['token'])
         # nu.get_account_feed()
-        nu.get_account_statements()
+        nu.account_sync()
         # nu.get_card_statements()
         # nu.get_card_feed()
         # nu.get_card_bills(details=True, save_file=True)

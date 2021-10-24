@@ -1,7 +1,7 @@
 from datetime import date
 
 from wrapper.utils.file_helper import FileHelper
-from .base_model import BaseList, BaseModel
+from wrapper.models.base_model import BaseList, BaseModel
 
 
 class Transaction(BaseModel):

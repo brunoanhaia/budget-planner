@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 from datetime import date
 
+from ..base_model import BaseModel
 from wrapper.utils import planify_array
-from .base_model import BaseModel
-from .nubank_card_bill_amount_per_tag import CardBillAmountPerTag
+from . import *
 
 
 class NuBankCardTransaction(BaseModel):

@@ -1,7 +1,7 @@
 from datetime import date
 
+from wrapper.models import *
 from wrapper.models.base_model import Base, BaseList, BaseModel
-from .transactions import TransactionsList
 
 
 class SummaryPerMonthList(BaseList):

@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 from datetime import datetime
 
-from .base_model import BaseModel
-from .nubank_card_transaction import NuBankCardBillTransactions, \
-    NuBankCardTransaction
+from . import *
+from ..base_model import BaseModel
 
 
 class NuBankCardBill(BaseModel):
@@ -121,7 +122,7 @@ class NuBankCardBill(BaseModel):
 
         values.pop('summary')
 
-    def get_transactions(self) -> NuBankCardBillTransactions:
+    def get_transactions(self):
 
         raw_details = self.nu._client.get(self.link_href)['bill']
         raw_transaction_list = raw_details.get('line_items', None)

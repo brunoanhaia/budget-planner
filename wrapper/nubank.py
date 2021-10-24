@@ -5,9 +5,9 @@ from datetime import datetime
 from pynubank.exception import NuException
 
 import cert_generator
-from wrapper.models.user_data_cache import UserDataCache
+from .cache_data_manager import CacheDataManager
 from .models import NuBankCardBill, User, Account
-from .providers import NuBankApiProvider, CacheDataProvider
+from .providers import NuBankApiProvider
 from .utils import ConfigLoader, FileHelper
 
 
@@ -16,8 +16,8 @@ class NuBankWrapper:
     def __init__(self, user, password="", mock: bool = True,
                  data_dir: str = 'cache'):
 
-        CacheDataProvider.instance().current = UserDataCache()
-        self.cache_data = CacheDataProvider.instance().current
+        # CacheDataProvider.instance().current = UserDataCache()
+        self.cache_data = CacheDataManager.get_data_cache_user()
 
         self.mock = mock
         self.user: str = user
@@ -95,8 +95,11 @@ class NuBankWrapper:
     def get_account_balance(self):
         return self.nu.get_account_balance()
 
-    def get_account_statements(self, save_file: bool = True):
+    def account_sync(self):
         Account(self.user).sync()
+
+    def card_sync(self):
+        pass
 
     def get_card_bills(self, details: bool, save_file: bool = True):
         raw_data = self.nu.get_bills()
@@ -141,7 +144,7 @@ class NuBankWrapper:
         return bills
 
     # Todo: Move to base class
-    def retrive_from_cache(self, type: None) -> list[dict]:
+    def retrieve_from_cache(self, type: None) -> list[dict]:
         file_path = getattr(self.file_helper, type.value).get_complete_path()
 
         with open(file_path, 'r', encoding='utf8') as f:
@@ -201,13 +204,6 @@ class NuBankWrapper:
         FileHelper.save_to_file(file_path, card_feed)
 
         return card_feed
-
-    # def get_account_feed(self):
-    #     self.cache_data.account.feed = self.nu.get_account_feed()
-    #     FileHelper.save_to_file(self.file_helper.account_feed.path,
-    #                             self.cache_data.account.feed)
-
-    #     return self.cache_data.account.feed
 
     def generate_cert(self, save_file=True):
         cert_generator.run(self.user, self.password, save_file=save_file)

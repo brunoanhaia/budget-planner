@@ -1,6 +1,6 @@
 from datetime import date
 
-from .base_model import BaseModel
+from wrapper.models.base_model import BaseModel
 
 
 class NuBankAccountMonthlySummary(BaseModel):

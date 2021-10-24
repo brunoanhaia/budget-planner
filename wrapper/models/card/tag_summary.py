@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 from datetime import date
 
-from .base_model import BaseModel
+from ..base_model import BaseModel
 
 
 class CardBillAmountPerTag(BaseModel):

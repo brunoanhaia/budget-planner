@@ -1,3 +1,3 @@
-from .cache_data_provider import CacheDataProvider
 from .database_provider import DatabaseProvider
+from .cache_data_provider import CacheDataProvider
 from .nubank_api_provider import NuBankApiProvider
