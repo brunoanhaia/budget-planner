@@ -5,9 +5,8 @@ from datetime import datetime
 from pynubank.exception import NuException
 
 import cert_generator
-from .cache_data_manager import CacheDataManager
-from .models import NuBankCardBill, User, Account
-from .providers import NuBankApiProvider
+from .models import NuBankCardBill, User
+from .providers import NuBankApiProvider, CacheDataProvider
 from .utils import ConfigLoader, FileHelper
 
 
@@ -17,7 +16,8 @@ class NuBankWrapper:
                  data_dir: str = 'cache'):
 
         # CacheDataProvider.instance().current = UserDataCache()
-        self.cache_data = CacheDataManager.get_data_cache_user()
+        self.cache = CacheDataProvider.instance()
+        self.cache.set_data(user)
 
         self.mock = mock
         self.user: str = user
@@ -30,14 +30,14 @@ class NuBankWrapper:
 
     @property
     def user(self):
-        if self.cache_data.user is not None:
-            return self.cache_data.user
+        if self.cache.data.user is not None:
+            return self.cache.data.user
         return User()
 
     @user.setter
     def user(self, value: str):
-        if self.cache_data.user is None:
-            self.cache_data.user = value
+        if self.cache.data.user is None:
+            self.cache.data.user = value
 
         self.file_helper = FileHelper(value)
 
@@ -96,52 +96,53 @@ class NuBankWrapper:
         return self.nu.get_account_balance()
 
     def account_sync(self):
-        Account(self.user).sync()
+        self.cache.data.account.sync()
 
     def card_sync(self):
-        pass
+        self.cache.data.card.sync()
 
     def get_card_bills(self, details: bool, save_file: bool = True):
-        raw_data = self.nu.get_bills()
-
-        bills: list[NuBankCardBill] = [NuBankCardBill().from_dict(card_bill)
-                                       for card_bill in raw_data]
-
-        amount_per_tag_list: list[dict] = []
-
-        for bill in bills:
-
-            # Link bill to user
-            bill.cpf = self.user
-
-            # Retrieving the bill details (transactions) from open and closed
-            # bills
-            if details and bill.state != 'future':
-
-                transactions_list = bill.get_transactions()
-
-                # Get amount per tag in each bill and  and to the list
-                amount_per_tag = transactions_list.group_tags_amount()
-                if amount_per_tag is not None:
-                    amount_per_tag_list.append(amount_per_tag.to_dict())
-
-            if save_file:
-                close_date = datetime.strptime(
-                    bill.close_date, "%Y-%m-%d")
-                file_path = self.file_helper.card_bill.get_custom_path(
-                    close_date.strftime("%Y-%m"))
-
-                FileHelper.save_to_file(file_path, bill.to_dict())
-
-        # Storing the data in the class instance for future use
-        self.cache_data.card.bill_list = bills
-
-        # Save amount per tag in a file
-        self.file_helper.save_to_file(
-            self.file_helper.card_bill_amount_per_tag.path,
-            amount_per_tag_list)
-
-        return bills
+        pass
+        # raw_data = self.nu.get_bills()
+        #
+        # bills: list[NuBankCardBill] = [NuBankCardBill().from_dict(card_bill)
+        #                                for card_bill in raw_data]
+        #
+        # amount_per_tag_list: list[dict] = []
+        #
+        # for bill in bills:
+        #
+        #     # Link bill to user
+        #     bill.cpf = self.user
+        #
+        #     # Retrieving the bill details (transactions) from open and closed
+        #     # bills
+        #     if details and bill.state != 'future':
+        #
+        #         transactions_list = bill.get_transactions()
+        #
+        #         # Get amount per tag in each bill and  and to the list
+        #         amount_per_tag = transactions_list.group_tags_amount()
+        #         if amount_per_tag is not None:
+        #             amount_per_tag_list.append(amount_per_tag.to_dict())
+        #
+        #     if save_file:
+        #         close_date = datetime.strptime(
+        #             bill.close_date, "%Y-%m-%d")
+        #         file_path = self.file_helper.card_bill.get_custom_path(
+        #             close_date.strftime("%Y-%m"))
+        #
+        #         FileHelper.save_to_file(file_path, bill.to_dict())
+        #
+        # # Storing the data in the class instance for future use
+        # self.cache.data.card.bill_list = bills
+        #
+        # # Save amount per tag in a file
+        # self.file_helper.save_to_file(
+        #     self.file_helper.card_bill_amount_per_tag.path,
+        #     amount_per_tag_list)
+        #
+        # return bills
 
     # Todo: Move to base class
     def retrieve_from_cache(self, type: None) -> list[dict]:
@@ -150,7 +151,7 @@ class NuBankWrapper:
         with open(file_path, 'r', encoding='utf8') as f:
             file_content = json.load(f)
 
-            self.cache_data[type.value] = file_content
+            self.cache[type.value] = file_content
 
             return file_content
 
@@ -168,9 +169,9 @@ class NuBankWrapper:
 
                 card_bills_list.append(file_content)
 
-        self.cache_data.card.bill_list = card_bills_list
+        self.cache.data.card.bills = card_bills_list
 
-        return self.cache_data.card.bill_list
+        return self.cache.data.card.bills
 
     def get_card_statements(self):
         card_statements = self.nu.get_card_statements()
@@ -191,7 +192,7 @@ class NuBankWrapper:
                 statement.pop('details')
 
         # Storing the data in the class instance for future use
-        self.cache_data.card.statements = card_statements
+        self.cache.data.card.statements = card_statements
         file_path = self.file_helper.card_statements.path
         FileHelper.save_to_file(file_path, card_statements)
 

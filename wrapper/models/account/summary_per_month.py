@@ -1,5 +1,8 @@
 from datetime import date
 
+from pandas import DataFrame
+import pandas as pd
+
 from wrapper.models import *
 from wrapper.models.base_model import Base, BaseList, BaseModel
 
@@ -7,9 +10,47 @@ from wrapper.models.base_model import Base, BaseList, BaseModel
 class SummaryPerMonthList(BaseList):
     __sheet_name__ = 'account_summary_per_month'
 
-    def __init__(self, cpf: str, summary_list: list[object]):
+    def __init__(self, cpf: str):
         Base.__init__(self, cpf)
-        self.__list: TransactionsList = summary_list
+        self.__list: list[SummaryPerMonth] = []
+
+    def get_data(self):
+        self.__generate()
+
+    def __generate(self) -> None:
+        values = self.cache_data.data.account.transactions_list
+
+        df = pd.DataFrame.from_dict([entry.to_dict() for entry in values])
+
+        # Transforming string to datetime for easy grouping
+        df['ref_date'] = pd.to_datetime(df['post_date'], format='%Y-%m-%d')
+        df.loc[df.type_name == 'TransferInEvent', "credit"] = df.amount
+        df.loc[df.type_name != 'TransferInEvent', "debit"] = df.amount
+
+        # Resampling data and grouping by ref_date
+        rdf: DataFrame = df.resample('MS', on='ref_date').agg(
+            {'credit': 'sum', 'debit': 'sum'})
+        rdf['balance'] = rdf.credit - rdf.debit
+        rdf['total'] = rdf['balance'].cumsum()
+        rdf['cpf'] = self.cpf
+
+        # Rounding everything with 2 decimal places
+        rdf = rdf.round(2)
+
+        # Transforming the ref_date index back to column and to the
+        # appropriate format
+        rdf.reset_index(inplace=True)
+        rdf['ref_date'] = rdf["ref_date"].dt.strftime("%Y-%m-%d")
+
+        # Converting dataframe to dictionary
+        df_dict = rdf.to_dict(
+            orient='records')
+
+        monthly_summary_list_obj = [
+            SummaryPerMonth().from_dict(monthly_summary)
+            for monthly_summary in df_dict]
+
+        self.__list = monthly_summary_list_obj
 
     def __getitem__(self, index):
         return self.__list[index]

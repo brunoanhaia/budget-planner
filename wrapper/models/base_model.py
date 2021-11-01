@@ -8,13 +8,15 @@ from pygsheets.exceptions import PyGsheetsException, WorksheetNotFound
 from pygsheets.worksheet import Worksheet
 
 from wrapper.providers import *
+from wrapper.utils import FileHelper
 
 
 class Base:
 
     def __init__(self, cpf: str) -> None:
-        self.cache_data = CacheDataProvider.instance().current
-        self.file_helper = None
+
+        self.cache_data = CacheDataProvider.instance()
+        self.file_helper = FileHelper(cpf)
         self.db_helper = DatabaseProvider.instance()
         self.nu = NuBankApiProvider.instance().nu
         self.__cpf = ''
@@ -33,18 +35,21 @@ class Base:
 
 
 class BaseList(Base):
-
     __sheet_name__: str
 
     def __init__(self, cpf: str) -> None:
         super().__init__(cpf)
 
     @abstractmethod
-    def get_file_path(self):
+    def get_list(self):
         pass
 
     @abstractmethod
-    def get_list(self):
+    def __getitem__(self, index):
+        pass
+
+    @abstractmethod
+    def __len__(self):
         pass
 
     def save_file(self):

@@ -3,7 +3,57 @@ from __future__ import annotations
 from datetime import datetime
 
 from . import *
-from ..base_model import BaseModel
+from ..base_model import BaseModel, BaseList
+
+
+class BillList(BaseList):
+    __sheet_name__ = 'card_bill'
+
+    def __init__(self, cpf):
+        super().__init__(cpf)
+        self.__list = list[NuBankCardBill]
+
+    def save_file(self):
+        for item in self.__list:
+
+            close_date = datetime.strptime(
+                item.close_date, "%Y-%m-%d")
+            file_path = self.file_helper.card_bill.get_custom_path(
+                close_date.strftime("%Y-%m"))
+
+            self.file_helper.save_to_file(file_path, item.to_dict())
+
+    def get_list(self):
+        return self.__list
+
+    def get_data(self):
+        raw_data = self.nu.get_bills()
+
+        bills: list[NuBankCardBill] = [NuBankCardBill().from_dict(card_bill)
+                                       for card_bill in raw_data]
+
+        for b in bills:
+
+            # Link bill to user
+            b.cpf = self.cpf
+
+            close_date = datetime.strptime(
+                b.close_date, "%Y-%m-%d")
+            file_path = self.file_helper.card_bill.get_custom_path(
+                close_date.strftime("%Y-%m"))
+
+            self.file_helper.save_to_file(file_path, b.to_dict())
+
+        # Storing the data in the class instance for future use
+        self.__list = bills
+
+        return bills
+
+    def __getitem__(self, index):
+        return self.__list[index]
+
+    def __len__(self):
+        return len(self.__list)
 
 
 class NuBankCardBill(BaseModel):
@@ -122,37 +172,3 @@ class NuBankCardBill(BaseModel):
 
         values.pop('summary')
 
-    def get_transactions(self):
-
-        raw_details = self.nu._client.get(self.link_href)['bill']
-        raw_transaction_list = raw_details.get('line_items', None)
-        self.nubank_id = raw_details.get('id', None)
-
-        transaction_list = [NuBankCardTransaction(self.cpf).from_dict(
-            transaction) for transaction in raw_transaction_list]
-
-        if self.cache_data.card.statements is None or \
-           len(self.cache_data.card.statements) == 0:
-            self.cache_data.card.statements = self.nu.get_card_statements()
-
-        transaction_list = [transaction.add_details_from_card_statement()
-                            for transaction in transaction_list]
-
-        # self.details = transaction_list
-
-        # Get the ref_date
-        ref_date = datetime.strptime(
-            self.close_date, "%Y-%m-%d").strftime("%Y-%m")
-        file_path = self.file_helper.card_bill_transactions.get_custom_path(
-            ref_date)
-
-        # Create the transaction object
-        transaction_obj = NuBankCardBillTransactions()
-        transaction_obj.ref_date = ref_date
-        transaction_obj.close_date = self.close_date
-        transaction_obj.cpf = getattr(self, 'cpf')
-        transaction_obj.transactions = transaction_list
-
-        self.file_helper.save_to_file(file_path, transaction_obj)
-
-        return transaction_obj

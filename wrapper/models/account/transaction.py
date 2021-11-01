@@ -51,9 +51,9 @@ class Transaction(BaseModel):
 class TransactionsList(BaseList):
     __sheet_name__ = 'account_statements'
 
-    def __init__(self, cpf, transactions: list[Transaction]):
+    def __init__(self, cpf):
         super().__init__(cpf)
-        self.__list = transactions
+        self.__list = None
         self.__file_helper = FileHelper(cpf)
 
     def __getitem__(self, index):
@@ -61,6 +61,31 @@ class TransactionsList(BaseList):
 
     def __len__(self):
         return len(self.__list)
+
+    def get_data(self):
+        raw_account_transactions = self.nu.get_account_statements()
+        self.__fill_from_transactions(raw_account_transactions)
+
+    def __fill_from_transactions(self, transactions: list[dict]):
+        # transforming properties using dict and removing old properties
+        raw_property_map: dict[str, str] = {
+            '__typename': 'type_name',
+            'postDate': 'post_date',
+            'destinationAccount': 'destination_account',
+            'originAccount': 'origin_account',
+        }
+
+        for t in transactions:
+            for prop in raw_property_map:
+                if prop in t:
+                    t[raw_property_map[prop]] = t[prop]
+
+                    t.pop(prop)
+
+        transactions_dict_obj = [Transaction(self.cpf).from_dict(
+            t) for t in transactions]
+
+        self.__list = transactions_dict_obj
 
     def get_list(self):
         return self.__list

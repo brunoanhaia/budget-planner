@@ -1,13 +1,71 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 
-from ..base_model import BaseModel
+from ..base_model import BaseModel, BaseList
 from wrapper.utils import planify_array
 from . import *
 
 
-class NuBankCardTransaction(BaseModel):
+class TransactionBillList(BaseList):
+
+    def get_data(self):
+        bills = self.cache_data.data.card.bills
+
+        bills_with_details = [b for b in bills if b.state != 'future']
+
+        for b in bills_with_details:
+            self.__get_transactions(b)
+            # Todo: Parei aqui
+            pass
+
+    def __get_transactions(self, bill: NuBankCardBill):
+        raw_details = self.nu._client.get(self.link_href)['bill']
+        raw_transaction_list = raw_details.get('line_items', None)
+
+        transaction_list = [Transaction(self.cpf).from_dict(
+            t) for t in raw_transaction_list]
+
+        if self.cache_data.data.card.statements is None or \
+           len(self.cache_data.data.card.statements) == 0:
+            self.cache_data.data.card.statements = self.nu.get_card_statements()
+
+        transaction_list = [t.add_details_from_card_statement()
+                            for t in transaction_list]
+
+        # self.details = transaction_list
+
+        # Get the ref_date
+        ref_date = datetime.strptime(
+            bill.close_date, "%Y-%m-%d").strftime("%Y-%m")
+        file_path = self.file_helper.card_bill_transactions.get_custom_path(
+            ref_date)
+
+        # Create the transaction object
+        transaction_obj = TransactionBill()
+        transaction_obj.ref_date = ref_date
+        transaction_obj.close_date = bill.close_date
+        transaction_obj.cpf = getattr(self, 'cpf')
+        transaction_obj.transactions = transaction_list
+
+        self.file_helper.save_to_file(file_path, transaction_obj)
+
+        return transaction_obj
+
+    def get_file_path(self):
+        pass
+
+    def get_list(self):
+        pass
+
+    def __getitem__(self, index):
+        pass
+
+    def __len__(self):
+        pass
+
+
+class Transaction(BaseModel):
 
     def __init__(self, cpf=''):
         super().__init__(cpf)
@@ -47,11 +105,11 @@ class NuBankCardTransaction(BaseModel):
 
     def add_details_from_card_statement(self):
 
-        if self.cache_data.card.statements is None and \
-           len(self.cache_data.card.statements) > 0:
-            self.cache_data.card.statements = self.nu.get_card_feed()
+        if self.cache_data.data.card.statements is None and \
+           len(self.cache_data.data.card.statements) > 0:
+            self.cache_data.data.card.statements = self.nu.get_card_feed()
 
-        card_statements = self.cache_data.card.statements
+        card_statements = self.cache_data.data.card.statements
 
         statement = [statement for statement in card_statements if (
             self.transaction_id is not None and
@@ -70,24 +128,24 @@ class NuBankCardTransaction(BaseModel):
         return self
 
 
-class NuBankCardBillTransactions(BaseModel):
+class TransactionBill(BaseModel):
 
     def __init__(self):
         super().__init__()
         self.ref_date: str = ''
         self.close_date: date = date.min
-        self.transactions: list[NuBankCardTransaction] = []
+        self.transactions: list[Transaction] = []
 
-    def group_tags_amount(self) -> CardBillAmountPerTag:
+    def group_tags_amount(self) -> TagSummary:
         transactions_with_tag_obj = [
-            transaction for transaction in self.transactions if
-            len(transaction.tags) > 0]
+            t for t in self.transactions if
+            len(t.tags) > 0]
 
         if len(transactions_with_tag_obj) > 0:
             amount_per_tag = self.__get_amount_per_tag(
                 transactions_with_tag_obj)
 
-            amount_per_tag_obj = CardBillAmountPerTag()
+            amount_per_tag_obj = TagSummary()
             amount_per_tag_obj.cpf = self.cpf
             amount_per_tag_obj.ref_date = self.ref_date
             amount_per_tag_obj.close_date = self.close_date
@@ -96,13 +154,13 @@ class NuBankCardBillTransactions(BaseModel):
             return amount_per_tag_obj
 
     def __get_amount_per_tag(self, transactions_list:
-                             list[NuBankCardTransaction]) -> dict[str, float]:
+                             list[Transaction]) -> dict[str, float]:
 
         amount_per_tag_dict = {}
 
-        for transaction in transactions_list:
-            tags = planify_array(transaction.tags)
-            amount = self.round_to_two_decimal(transaction.amount)
+        for t in transactions_list:
+            tags = planify_array(t.tags)
+            amount = self.round_to_two_decimal(t.amount)
 
             for tag in tags:
                 if tag in amount_per_tag_dict:
