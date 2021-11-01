@@ -4,23 +4,30 @@ from datetime import date, datetime
 
 from ..base_model import BaseModel, BaseList
 from wrapper.utils import planify_array
-from . import *
+from .tag_summary import TagSummary
+from .bill import NuBankCardBill
 
 
 class TransactionBillList(BaseList):
 
+    def __init__(self, cpf):
+        super().__init__(cpf)
+        self.__list: list[TransactionBill] = []
+
     def get_data(self):
+        transactions_list_obj = []
         bills = self.cache_data.data.card.bills
 
         bills_with_details = [b for b in bills if b.state != 'future']
 
         for b in bills_with_details:
-            self.__get_transactions(b)
-            # Todo: Parei aqui
-            pass
+            transactions_obj = self.__get_transactions(b)
+            transactions_list_obj.append(transactions_obj)
+
+        self.__list = transactions_list_obj
 
     def __get_transactions(self, bill: NuBankCardBill):
-        raw_details = self.nu._client.get(self.link_href)['bill']
+        raw_details = self.nu._client.get(bill.link_href)['bill']
         raw_transaction_list = raw_details.get('line_items', None)
 
         transaction_list = [Transaction(self.cpf).from_dict(
@@ -33,13 +40,9 @@ class TransactionBillList(BaseList):
         transaction_list = [t.add_details_from_card_statement()
                             for t in transaction_list]
 
-        # self.details = transaction_list
-
         # Get the ref_date
         ref_date = datetime.strptime(
             bill.close_date, "%Y-%m-%d").strftime("%Y-%m")
-        file_path = self.file_helper.card_bill_transactions.get_custom_path(
-            ref_date)
 
         # Create the transaction object
         transaction_obj = TransactionBill()
@@ -48,21 +51,20 @@ class TransactionBillList(BaseList):
         transaction_obj.cpf = getattr(self, 'cpf')
         transaction_obj.transactions = transaction_list
 
-        self.file_helper.save_to_file(file_path, transaction_obj)
-
         return transaction_obj
 
-    def get_file_path(self):
-        pass
+    def save_file(self):
+        for transaction_obj in self.__list:
+            transaction_obj.save_file()
 
     def get_list(self):
-        pass
+        return self.__list
 
     def __getitem__(self, index):
-        pass
+        return self.__list[index]
 
     def __len__(self):
-        pass
+        return len(self.__list)
 
 
 class Transaction(BaseModel):
@@ -135,6 +137,11 @@ class TransactionBill(BaseModel):
         self.ref_date: str = ''
         self.close_date: date = date.min
         self.transactions: list[Transaction] = []
+
+    def save_file(self):
+        file_path = self.file_helper.card_bill_transactions.get_custom_path(
+                self.ref_date)
+        self.file_helper.save_to_file(file_path, self)
 
     def group_tags_amount(self) -> TagSummary:
         transactions_with_tag_obj = [

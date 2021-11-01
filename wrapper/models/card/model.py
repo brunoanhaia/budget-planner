@@ -11,14 +11,18 @@ class Card(BaseModel):
         self.statements: list[dict] = []
         self.bills: BillList = BillList(cpf)
         self.tag_summary: TagSummaryList = TagSummaryList(cpf)
-        self.transaction_list: list[TransactionBill] = list()
+        self.transaction_list: TransactionBillList = TransactionBillList(cpf)
 
     def sync(self):
         self.__get_data()
-        self.bills.save_file()
-        self.tag_summary.save_file()
+        self.__save_file()
 
     def __get_data(self):
         self.bills.get_data()
+        self.transaction_list.get_data()
         self.tag_summary.get_data()
 
+    def __save_file(self):
+        self.bills.save_file()
+        self.transaction_list.save_file()
+        self.tag_summary.save_file()

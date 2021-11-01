@@ -15,25 +15,25 @@ class TagSummaryList(BaseList):
         pass
 
     def get_list(self):
-        pass
+        self.__list
 
     def __getitem__(self, index):
-        pass
+        return self.__list[index]
 
     def __len__(self):
-        pass
+        return len(self.__list)
 
     def get_data(self):
         amount_per_tag_list: list[dict] = []
 
-        bill_list = self.cache_data.data.card.transaction_list
+        transactions_list = self.cache_data.data.card.transaction_list
 
-        bill_list_with_details = [bill for bill in bill_list if bill.state != 'future']
+        # bill_list_with_details = [bill for bill in bill_list if bill.state != 'future']
 
-        for bill in bill_list_with_details:
+        for transaction_obj in transactions_list:
 
             # Get amount per tag in each bill and  and to the list
-            amount_per_tag: TagSummary = bill.transactions_list.group_tags_amount()
+            amount_per_tag: TagSummary = transaction_obj.group_tags_amount()
             if amount_per_tag is not None:
                 amount_per_tag_list.append(amount_per_tag.to_dict())
 
