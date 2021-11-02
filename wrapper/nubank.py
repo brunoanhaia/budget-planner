@@ -5,7 +5,7 @@ from datetime import datetime
 from pynubank.exception import NuException
 
 import cert_generator
-from .models import NuBankCardBill, User
+from .models import User
 from .providers import NuBankApiProvider, CacheDataProvider
 from .utils import ConfigLoader, FileHelper
 
@@ -100,49 +100,6 @@ class NuBankWrapper:
 
     def card_sync(self):
         self.cache.data.card.sync()
-
-    def get_card_bills(self, details: bool, save_file: bool = True):
-        pass
-        # raw_data = self.nu.get_bills()
-        #
-        # bills: list[NuBankCardBill] = [NuBankCardBill().from_dict(card_bill)
-        #                                for card_bill in raw_data]
-        #
-        # amount_per_tag_list: list[dict] = []
-        #
-        # for bill in bills:
-        #
-        #     # Link bill to user
-        #     bill.cpf = self.user
-        #
-        #     # Retrieving the bill details (transactions) from open and closed
-        #     # bills
-        #     if details and bill.state != 'future':
-        #
-        #         transactions_list = bill.get_transactions()
-        #
-        #         # Get amount per tag in each bill and  and to the list
-        #         amount_per_tag = transactions_list.group_tags_amount()
-        #         if amount_per_tag is not None:
-        #             amount_per_tag_list.append(amount_per_tag.to_dict())
-        #
-        #     if save_file:
-        #         close_date = datetime.strptime(
-        #             bill.close_date, "%Y-%m-%d")
-        #         file_path = self.file_helper.card_bill.get_custom_path(
-        #             close_date.strftime("%Y-%m"))
-        #
-        #         FileHelper.save_to_file(file_path, bill.to_dict())
-        #
-        # # Storing the data in the class instance for future use
-        # self.cache.data.card.bill_list = bills
-        #
-        # # Save amount per tag in a file
-        # self.file_helper.save_to_file(
-        #     self.file_helper.card_bill_amount_per_tag.path,
-        #     amount_per_tag_list)
-        #
-        # return bills
 
     # Todo: Move to base class
     def retrieve_from_cache(self, type: None) -> list[dict]:

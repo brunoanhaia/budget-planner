@@ -33,16 +33,8 @@ class BillList(BaseList):
                                        for card_bill in raw_data]
 
         for b in bills:
-
             # Link bill to user
             b.cpf = self.cpf
-
-            close_date = datetime.strptime(
-                b.close_date, "%Y-%m-%d")
-            file_path = self.file_helper.card_bill.get_custom_path(
-                close_date.strftime("%Y-%m"))
-
-            self.file_helper.save_to_file(file_path, b.to_dict())
 
         # Storing the data in the class instance for future use
         self.__list = bills
@@ -171,4 +163,3 @@ class NuBankCardBill(BaseModel):
             values[key] = inner_value
 
         values.pop('summary')
-
