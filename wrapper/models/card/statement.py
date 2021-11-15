@@ -2,18 +2,32 @@ from ..base_model import BaseList, BaseModel
 
 
 class StatementList(BaseList):
+    __sheet_name__ = 'card_statements'
 
     def __init__(self, cpf):
         super().__init__(cpf)
         self.__list: list[Statement] = []
 
     def save_file(self):
-        pass
+        file_path = self.file_helper.card_statements.path
+        self.file_helper.save_to_file(file_path, self.__list)
 
     def get_data(self):
+        if len(self.__list) > 0:
+            return self.__list
+
         card_statements = self.nu.get_card_statements()
 
         for statement in card_statements:
+            statement['cpf'] = self.cpf
+
+            if 'amount' in statement:
+                statement['amount'] = statement['amount']/100
+
+            if 'amount_without_iof' in statement:
+                statement['amount_without_iof'] = \
+                    statement['amount_without_iof']/100
+
             if 'details' in statement:
                 for key in statement['details'].keys():
                     statement[key] = statement['details'][key]
@@ -29,9 +43,7 @@ class StatementList(BaseList):
                 statement.pop('details')
 
         # Storing the data in the class instance for future use
-        self.cache_data.data.card.statements = card_statements
-        file_path = self.file_helper.card_statements.path
-        self.file_helper.save_to_file(file_path, card_statements)
+        self.__list = card_statements
 
         return card_statements
 

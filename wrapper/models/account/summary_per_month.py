@@ -17,6 +17,8 @@ class SummaryPerMonthList(BaseList):
     def get_data(self):
         self.__generate()
 
+        return self.get_list()
+
     def __generate(self) -> None:
         values = self.cache_data.data.account.transactions_list
 
@@ -59,7 +61,7 @@ class SummaryPerMonthList(BaseList):
         return len(self.__list)
 
     def get_list(self):
-        return self.__list
+        return [item.to_dict() for item in self.__list]
 
     def get_file_path(self):
         return self.file_helper.account_monthly_summary.path

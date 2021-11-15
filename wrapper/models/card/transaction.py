@@ -35,7 +35,7 @@ class TransactionBillList(BaseList):
 
         if self.cache_data.data.card.statements is None or \
            len(self.cache_data.data.card.statements) == 0:
-            self.cache_data.data.card.statements = self.nu.get_card_statements()
+            raise Exception('No statements found')
 
         transaction_list = [t.add_details_from_card_statement()
                             for t in transaction_list]
@@ -109,7 +109,7 @@ class Transaction(BaseModel):
 
         if self.cache_data.data.card.statements is None and \
            len(self.cache_data.data.card.statements) > 0:
-            self.cache_data.data.card.statements = self.nu.get_card_feed()
+            raise Exception('No statements found')
 
         card_statements = self.cache_data.data.card.statements
 
@@ -120,12 +120,12 @@ class Transaction(BaseModel):
         if statement is not None and len(statement) > 0:
             detail_filter_list = ['tags', 'charges']
 
-            for detail in detail_filter_list:
+            for detail_key in detail_filter_list:
                 found_key = statement[0]
-                details_key = found_key.get('details', None)
+                detail_value = found_key.get(detail_key, None)
 
-                if details_key is not None and detail in details_key:
-                    self.__setattr__(detail, details_key[detail])
+                if detail_value is not None:
+                    self.__setattr__(detail_key, detail_value)
 
         return self
 
@@ -143,7 +143,8 @@ class TransactionBill(BaseModel):
                 self.ref_date)
         self.file_helper.save_to_file(file_path, self)
 
-    def group_tags_amount(self) -> TagSummary:
+    def group_tags_amount(self) -> list[TagSummary]:
+        amount_per_tag_list: list[TagSummary] = []
         transactions_with_tag_obj = [
             t for t in self.transactions if
             len(t.tags) > 0]
@@ -152,13 +153,17 @@ class TransactionBill(BaseModel):
             amount_per_tag = self.__get_amount_per_tag(
                 transactions_with_tag_obj)
 
-            amount_per_tag_obj = TagSummary()
-            amount_per_tag_obj.cpf = self.cpf
-            amount_per_tag_obj.ref_date = self.ref_date
-            amount_per_tag_obj.close_date = self.close_date
-            amount_per_tag_obj.values = amount_per_tag
+            for tag in amount_per_tag:
+                amount_per_tag_obj = TagSummary()
+                amount_per_tag_obj.cpf = self.cpf
+                amount_per_tag_obj.ref_date = self.ref_date
+                amount_per_tag_obj.close_date = self.close_date
+                amount_per_tag_obj.tag = tag
+                amount_per_tag_obj.value = amount_per_tag[tag]
 
-            return amount_per_tag_obj
+                amount_per_tag_list.append(amount_per_tag_obj)
+
+            return amount_per_tag_list
 
     def __get_amount_per_tag(self, transactions_list:
                              list[Transaction]) -> dict[str, float]:

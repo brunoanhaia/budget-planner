@@ -53,7 +53,7 @@ class TransactionsList(BaseList):
 
     def __init__(self, cpf):
         super().__init__(cpf)
-        self.__list = None
+        self.__list: list[Transaction] = []
         self.__file_helper = FileHelper(cpf)
 
     def __getitem__(self, index):
@@ -63,8 +63,11 @@ class TransactionsList(BaseList):
         return len(self.__list)
 
     def get_data(self):
-        raw_account_transactions = self.nu.get_account_statements()
-        self.__fill_from_transactions(raw_account_transactions)
+        if len(self.__list) == 0:
+            raw_account_transactions = self.nu.get_account_statements()
+            self.__fill_from_transactions(raw_account_transactions)
+
+        return [item.to_dict() for item in self.__list]
 
     def __fill_from_transactions(self, transactions: list[dict]):
         # transforming properties using dict and removing old properties
@@ -87,14 +90,11 @@ class TransactionsList(BaseList):
 
         self.__list = transactions_dict_obj
 
-    def get_list(self):
-        return self.__list
-
     def get_file_path(self):
         file_path = self.__file_helper.account_statement.path
 
         return file_path
 
-    def get_transactions_dict(self) -> list[dict]:
+    def get_list(self) -> list[dict]:
         return [transaction.to_dict() for transaction
                 in self.__list]

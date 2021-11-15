@@ -15,14 +15,20 @@ class Account(BaseModel):
 
     def sync(self):
         self.__get_data()
-        # self.transactions_list.set_sheets_data()
-        # self.summary_per_month_list.set_sheets_data()
-        self.transactions_list.save_file()
-        self.summary_list.save_file()
+        self.__save_file()
+        self.__set_sheets_data()
 
     def __get_data(self):
         self.transactions_list.get_data()
         self.summary_list.get_data()
+
+    def __save_file(self):
+        self.transactions_list.save_file()
+        self.summary_list.save_file()
+
+    def __set_sheets_data(self):
+        self.transactions_list.set_sheets_data()
+        self.summary_list.set_sheets_data()
 
     @staticmethod
     def __get_cell_header(cell_matrix: list[list[Cell]],

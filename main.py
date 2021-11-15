@@ -57,10 +57,6 @@ for user in config['users']:
             print('Sorry! We need the token to proceed')
             break
 
-    if not args.from_cache:
-        nu.authenticate_with_token_string(user['token'])
-        # nu.account_sync()
-        nu.card_sync()
-
-
-    # nu.sync()
+    nu.authenticate_with_token_string(user['token'])
+    nu.account_sync()
+    nu.card_sync()

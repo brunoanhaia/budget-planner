@@ -14,16 +14,22 @@ class Card(BaseModel):
         self.transaction_list: TransactionBillList = TransactionBillList(cpf)
 
     def sync(self):
-        # self.__get_data()
-        # self.__save_file()
-        self.statements.get_data()
+        self.__get_data()
+        self.__save_file()
+        self.__set_sheets_data()
 
     def __get_data(self):
+        self.statements.get_data()
         self.bills.get_data()
         self.transaction_list.get_data()
         self.tag_summary.get_data()
 
     def __save_file(self):
+        self.statements.save_file()
         self.bills.save_file()
         self.transaction_list.save_file()
         self.tag_summary.save_file()
+
+    def __set_sheets_data(self):
+        self.statements.set_sheets_data()
+        self.tag_summary.set_sheets_data()

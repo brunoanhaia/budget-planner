@@ -2,6 +2,7 @@ from __future__ import annotations
 import copy
 from abc import abstractmethod
 from datetime import date, datetime
+import inspect
 
 import pandas as pd
 from pygsheets.exceptions import PyGsheetsException, WorksheetNotFound
@@ -57,7 +58,7 @@ class BaseList(Base):
 
         self.file_helper.save_to_file(file_path, self.get_list())
 
-    def set_sheets_data(self, get_data_method):
+    def set_sheets_data(self, get_data_method='get_data'):
 
         try:
             worksheet: Worksheet = self.db_helper \
@@ -72,7 +73,7 @@ class BaseList(Base):
                                                              ignore_index=True)
 
             worksheet.clear()
-            worksheet.set_dataframe(current_sheets_data, start='A1')
+            worksheet.set_dataframe(current_sheets_data, start='A1', fit=True)
 
             return True
 
@@ -84,6 +85,9 @@ class BaseList(Base):
                                .get_worksheet(self.__sheet_name__)
 
         df = worksheet.get_as_df()
+
+        if 'cpf' not in df:
+            return df
 
         if current_cpf:
             result_df = df[df['cpf'].astype(str) == self.cpf]
@@ -116,20 +120,22 @@ class BaseModel(Base):
         df = pd.DataFrame.from_dict(self.__class__.__dict__)
         current_worksheet.set_dataframe(df, start='A1')
 
+    @classmethod
+    def get_base_class_list(cls, T):
+        return [c.__name__ for c in inspect.getmro(T)]
+
     def to_dict(self) -> dict:
         obj_dict = copy.copy(self.__dict__)
-        cls_name = self.__class__.__name__
-        cls_parent_name = self.__class__.__base__.__name__
+        base_class_list = self.get_base_class_list(self.__class__)
+        # cls_name = self.__class__.__name__
+        # cls_parent_name = self.__class__.__base__.__name__
 
         forbidden_keys = [key for key in obj_dict if
                           type(obj_dict[key]) not in
                           [str, int, float, bool, list, dict, date, datetime]]
         [obj_dict.pop(key) for key in forbidden_keys]
 
-        property_keys = [key for key in obj_dict if
-                         key.startswith(f'_{cls_name}_') or
-                         key.startswith(f'_{cls_parent_name}_')]
-
+        property_keys = [key for key in obj_dict if [cls_name for cls_name in base_class_list if key.startswith(f'_{cls_name}_')]]
         for key in property_keys:
             new_key = key.split('__')[-1]
             obj_dict[new_key] = obj_dict[key]

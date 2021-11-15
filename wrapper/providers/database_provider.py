@@ -35,4 +35,4 @@ class DatabaseProvider:
         try:
             return self.default_sheet.worksheet(property, name)
         except WorksheetNotFound:
-            return self.default_sheet.add_worksheet(name, src_tuple=('1AIj61NNfIjpnhUodnR0QMdCih7En6o5KZwirsxgN30c', 0))
+            return self.default_sheet.add_worksheet(name)

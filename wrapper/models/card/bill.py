@@ -13,6 +13,9 @@ class BillList(BaseList):
         super().__init__(cpf)
         self.__list = list[NuBankCardBill]
 
+    def sync_gs(self):
+        pass
+
     def save_file(self):
         for item in self.__list:
 
