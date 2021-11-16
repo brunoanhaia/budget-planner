@@ -69,6 +69,16 @@ class TransactionsList(BaseList):
 
         return [item.to_dict() for item in self.__list]
 
+    def __parse_pix_transactions(self, transactions: list[Transaction]):
+        pix_trasactions_type_list = {
+            'PixTransferOutEvent': 'destination_account'}
+
+        for t in transactions:
+            if t.type_name in pix_trasactions_type_list.keys():
+                details = t.detail.split('\n')
+                t.detail = details[1]
+                t.__setattr__(pix_trasactions_type_list[t.type_name], details[0])
+
     def __fill_from_transactions(self, transactions: list[dict]):
         # transforming properties using dict and removing old properties
         raw_property_map: dict[str, str] = {
@@ -87,6 +97,8 @@ class TransactionsList(BaseList):
 
         transactions_dict_obj = [Transaction(self.cpf).from_dict(
             t) for t in transactions]
+
+        self.__parse_pix_transactions(transactions_dict_obj)
 
         self.__list = transactions_dict_obj
 
