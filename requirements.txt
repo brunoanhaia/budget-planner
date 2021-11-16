@@ -1,4 +1,3 @@
-pandas==1.3.2
-pynubank==2.13.0
-
+pandas==1.3.4
+pynubank==2.15.0
 pygsheets~=2.0.5
