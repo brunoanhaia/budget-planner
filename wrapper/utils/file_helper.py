@@ -10,6 +10,7 @@ CARD_STATEMENTS_FILE = 'card_statements'
 CARD_BILL_FOLDER = 'card_bill'
 CARD_BILL_TRANSACTIONS_FOLDER = 'card_bill_transactions'
 CARD_BILL_AMOUNT_PER_TAG_FILE = 'card_bill_amount_per_tag'
+CARD_BILL_AMOUNT_PER_CATEGORY_FILE = 'card_bill_amount_per_category'
 CERTIFICATE_SUFFIX = '_cert.p12'
 TOKEN_SUFFIX = '.token'
 
@@ -47,6 +48,7 @@ class FileHelper:
         self.card_bill = FilePath(self.__from_base_dir(CARD_BILL_FOLDER), True)
         self.card_bill_transactions = FilePath(self.__from_base_dir(CARD_BILL_TRANSACTIONS_FOLDER), True)
         self.card_bill_amount_per_tag = FilePath(self.__from_base_dir(CARD_BILL_AMOUNT_PER_TAG_FILE))
+        self.card_bill_amount_per_category = FilePath(self.__from_base_dir(CARD_BILL_AMOUNT_PER_CATEGORY_FILE))
         self.certificate = FilePath(self.__from_base_dir(os.path.join(self.user + CERTIFICATE_SUFFIX)))
         self.token = FilePath(self.__from_base_dir(os.path.join(self.user + TOKEN_SUFFIX)))
     

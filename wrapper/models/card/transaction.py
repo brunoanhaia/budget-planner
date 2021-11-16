@@ -5,6 +5,7 @@ from datetime import date, datetime
 from ..base_model import BaseModel, BaseList
 from wrapper.utils import planify_array
 from .tag_summary import TagSummary
+from .category_summary import CategorySummary
 from .bill import NuBankCardBill
 
 
@@ -143,6 +144,51 @@ class TransactionBill(BaseModel):
                 self.ref_date)
         self.file_helper.save_to_file(file_path, self)
 
+    def group_category_amount(self):
+        amount_per_category_list: list[CategorySummary] = []
+        transactions_with_category_obj = [
+            t for t in self.transactions if
+            getattr(t, 'category', None) is not None]
+
+        if len(transactions_with_category_obj) > 0:
+            amount_per_category = self.__get_amount_per_category(
+                transactions_with_category_obj)
+
+            # Expand each tag to a CategorySummary object
+            for cat in amount_per_category:
+                amount_per_category_obj = CategorySummary()
+                amount_per_category_obj.cpf = self.cpf
+                amount_per_category_obj.ref_date = self.ref_date
+                amount_per_category_obj.close_date = self.close_date
+                amount_per_category_obj.category = cat
+                amount_per_category_obj.value = amount_per_category[cat]
+
+                amount_per_category_list.append(amount_per_category_obj)
+
+            return amount_per_category_list
+
+    def __get_amount_per_category(self, transactions_list: list[Transaction]) -> dict[str, float]:
+        amount_per_category_dict = {}
+        forbidden_categories = ['pagamento']
+
+        for t in transactions_list:
+            category = t.category.lower()
+
+            if category is None or category == '' or category in forbidden_categories:
+                continue
+
+            amount = self.round_to_two_decimal(t.amount)
+
+            if category in amount_per_category_dict:
+                amount_per_category_dict[category] += amount
+            else:
+                amount_per_category_dict[category] = amount
+
+            amount_per_category_dict[category] = self.round_to_two_decimal(
+                                        amount_per_category_dict[category])
+
+        return amount_per_category_dict
+
     def group_tags_amount(self) -> list[TagSummary]:
         amount_per_tag_list: list[TagSummary] = []
         transactions_with_tag_obj = [
@@ -153,6 +199,7 @@ class TransactionBill(BaseModel):
             amount_per_tag = self.__get_amount_per_tag(
                 transactions_with_tag_obj)
 
+            # Expand each tag to a TagSummary object
             for tag in amount_per_tag:
                 amount_per_tag_obj = TagSummary()
                 amount_per_tag_obj.cpf = self.cpf

@@ -1,6 +1,5 @@
 import json
 import os
-from datetime import datetime
 
 from pynubank.exception import NuException
 
