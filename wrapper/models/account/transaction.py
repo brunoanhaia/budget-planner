@@ -47,6 +47,11 @@ class Transaction(BaseModel):
 
         self.__destination_account = value
 
+    def __eq__(self, other):
+        if isinstance(self, other.__class__):
+            return self.id == other.id and self.type_name == other.type_name and self.title == other.title and self.detail == other.detail and self.post_date == other.post_date and self.amount == other.amount and self.origin_account == other.origin_account and self.destination_account == other.destination_account
+        return False
+
 
 class TransactionsList(BaseList):
     __sheet_name__ = 'account_statements'
@@ -61,6 +66,11 @@ class TransactionsList(BaseList):
 
     def __len__(self):
         return len(self.__list)
+
+    def __eq__(self, other):
+        if isinstance(self, other.__class__):
+            return self.__list == other.__list
+        return False
 
     def get_data(self):
         if len(self.__list) == 0:
