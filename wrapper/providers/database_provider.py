@@ -10,7 +10,7 @@ class DatabaseProvider:
     def __init__(self) -> None:
         # Todo: move credentials to environment variables
         self.client = pygsheets.authorize(
-            client_secret='cache/client_secret.json',
+            service_account_file='cache/service_secret.json',
             credentials_directory='cache')
         self.__init_default_sheet()
 

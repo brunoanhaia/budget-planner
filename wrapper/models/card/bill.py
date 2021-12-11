@@ -11,10 +11,7 @@ class BillList(BaseList):
 
     def __init__(self, cpf):
         super().__init__(cpf)
-        self.__list = list[NuBankCardBill]
-
-    def sync_gs(self):
-        pass
+        self.__list: list[NuBankCardBill] = []
 
     def save_file(self):
         for item in self.__list:
@@ -27,22 +24,23 @@ class BillList(BaseList):
             self.file_helper.save_to_file(file_path, item.to_dict())
 
     def get_list(self):
-        return self.__list
+        return [item.to_dict() for item in self.__list]
 
     def get_data(self):
-        raw_data = self.nu.get_bills()
+        if len(self.__list) == 0:
+            raw_data = self.nu.get_bills()
+            bills: list[NuBankCardBill] = [
+                NuBankCardBill().from_dict(card_bill)
+                for card_bill in raw_data]
 
-        bills: list[NuBankCardBill] = [NuBankCardBill().from_dict(card_bill)
-                                       for card_bill in raw_data]
+            for b in bills:
+                # Link bill to user
+                b.cpf = self.cpf
 
-        for b in bills:
-            # Link bill to user
-            b.cpf = self.cpf
+            # Storing the data in the class instance for future use
+            self.__list = bills
 
-        # Storing the data in the class instance for future use
-        self.__list = bills
-
-        return bills
+        return self.get_list()
 
     def __getitem__(self, index):
         return self.__list[index]
@@ -58,10 +56,11 @@ class NuBankCardBill(BaseModel):
         self.nubank_id: str = ''
         self.state: str = ''
         self.due_date: str = ''
-        self.close_date: str = ''
         self.effective_due_date: str = ''
         self.open_date: str = ''
         self.link_href: str = ''
+        self.__ref_date: str = ''
+        self.__close_date: str = ''
         self.__past_balance: float = 0.0
         self.__total_balance: float = 0.0
         self.__interest_rate: float = 0.0
@@ -71,6 +70,20 @@ class NuBankCardBill(BaseModel):
         self.__minimum_payment: float = 0.0
 
     # region Properties
+    @property
+    def close_date(self):
+        return self.__close_date
+
+    @close_date.setter
+    def close_date(self, value):
+        self.__close_date = value
+        self.__ref_date = datetime.strptime(
+            value, "%Y-%m-%d").strftime("%Y-%m")
+
+    @property
+    def ref_date(self):
+        return self.__ref_date
+
     @property
     def past_balance(self):
         return self.__past_balance

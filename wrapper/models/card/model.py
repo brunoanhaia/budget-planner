@@ -37,3 +37,5 @@ class Card(BaseModel):
         self.statements.set_sheets_data()
         self.tag_summary.set_sheets_data()
         self.category_summary.set_sheets_data()
+        self.bills.set_sheets_data()
+        self.transaction_list.set_sheets_data()

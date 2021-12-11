@@ -10,22 +10,26 @@ from .bill import NuBankCardBill
 
 
 class TransactionBillList(BaseList):
+    __sheet_name__ = 'card_transactions_list'
 
     def __init__(self, cpf):
         super().__init__(cpf)
         self.__list: list[TransactionBill] = []
 
     def get_data(self):
-        transactions_list_obj = []
-        bills = self.cache_data.data.card.bills
+        if len(self.__list) == 0:
+            transactions_list_obj = []
+            bills = self.cache_data.data.card.bills
 
-        bills_with_details = [b for b in bills if b.state != 'future']
+            bills_with_details = [b for b in bills if b.state != 'future']
 
-        for b in bills_with_details:
-            transactions_obj = self.__get_transactions(b)
-            transactions_list_obj.append(transactions_obj)
+            for b in bills_with_details:
+                transactions_obj = self.__get_transactions(b)
+                transactions_list_obj.append(transactions_obj)
 
-        self.__list = transactions_list_obj
+            self.__list = transactions_list_obj
+
+        return self.get_list()
 
     def __get_transactions(self, bill: NuBankCardBill):
         raw_details = self.nu._client.get(bill.link_href)['bill']
@@ -59,7 +63,7 @@ class TransactionBillList(BaseList):
             transaction_obj.save_file()
 
     def get_list(self):
-        return self.__list
+        return [item.to_dict() for item in self.__list]
 
     def __getitem__(self, index):
         return self.__list[index]
