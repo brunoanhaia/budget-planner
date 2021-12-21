@@ -5,4 +5,4 @@ from django_q.tasks import async_task
 
 
 def index(request):
-    return render(request, 'main_app/index.html')
+    return render(request, 'core/index.html')
