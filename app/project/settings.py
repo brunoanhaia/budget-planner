@@ -42,8 +42,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'core.api',
-    'django_q',
     'core.app',
+    'core.models',
+    'django_q',
     'nubank',
 ]
 
