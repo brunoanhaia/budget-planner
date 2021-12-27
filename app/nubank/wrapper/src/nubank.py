@@ -3,26 +3,22 @@ import os
 
 from pynubank.exception import NuException
 
-import cert_generator
-from .models import User
-from .providers import NuBankApiProvider, CacheDataProvider
-from .utils import ConfigLoader, FileHelper
-
+from .utils import FileHelper, Constants, init_config
+from .utils.user import get_user_password, set_user_token_value, get_user_token_value
+from decouple import config
 
 class NuBankWrapper:
 
-    def __init__(self, user, password="", mock: bool = True,
-                 data_dir: str = 'cache'):
+    def __init__(self, user: str, mock: bool = True, data_dir: str = 'cache'):
+        from .providers import NuBankApiProvider, CacheDataProvider
+        init_config(user)
 
-        # CacheDataProvider.instance().current = UserDataCache()
         self.cache = CacheDataProvider.instance()
         self.cache.set_data(user)
 
         self.mock = mock
         self.user: str = user
         self.file_helper = FileHelper(self.user)
-        self.password = password
-        self.refresh_token: str = ''
         self.data_dir = data_dir
 
         self.nu = NuBankApiProvider.instance().nu
@@ -31,7 +27,6 @@ class NuBankWrapper:
     def user(self):
         if self.cache.data.user is not None:
             return self.cache.data.user
-        return User()
 
     @user.setter
     def user(self, value: str):
@@ -46,50 +41,30 @@ class NuBankWrapper:
 
     def authenticate_with_qr_code(self):
         if self.mock:
-            return self.nu.authenticate_with_qr_code(self.user, self.password,
-                                                     "qualquer-coisa")
+            return self.nu.authenticate_with_qr_code(self.user, "", "qualquer-coisa")
         else:
             uuid, qr_code = self.nu.get_qr_code()
             qr_code.print_ascii(invert=True)
-            input('Apos escanear o QRCode pressione enter para continuar')
-            return self.nu.authenticate_with_qr_code(self.user, self.password,
-                                                     uuid)
+            input('Press enter to continue...')
+            return self.nu.authenticate_with_qr_code(self.user, get_user_password(self.user), uuid)
 
-    def authenticate_with_certificate(self):
-        if self.password is None or self.password == '':
-            self.password = input("Please insert your password: ")
+    def __authenticate_with_certificate(self):
+        cert_path = config(Constants.Wrapper.user_certificate_path)
 
-        self.refresh_token = self.nu.authenticate_with_cert(
-            self.user, self.password, self.file_helper.certificate.path)
+        # Authenticate with certificate and store the refresh token for future use
+        refresh_token = self.nu.authenticate_with_cert(self.user, get_user_password(self.user), cert_path)
+        set_user_token_value(self.user, refresh_token)
 
-        ConfigLoader.update(os.getenv("CONFIG_FILE"), {
-            'type': 'user',
-            'key': self.user,
-            'update_values': {
-                'token': self.refresh_token
-            }
-        })
+        return refresh_token
 
-        FileHelper.save_to_file(self.file_helper.token.path,
-                                self.refresh_token, file_format='')
-
-        return self.refresh_token
-
-    def authenticate_with_token(self):
-        token_file_name = self.file_helper.token.path
-        with open(token_file_name) as refresh_file:
-            refresh_token = json.load(refresh_file)
-            cert_path = self.file_helper.certificate.path
-
-            return self.nu.authenticate_with_refresh_token(refresh_token,
-                                                           cert_path)
-
-    def authenticate_with_token_string(self, token: str):
+    def authenticate_with_token_string(self):
         try:
-            cert_path = self.file_helper.certificate.path
+            cert_path = config(Constants.Wrapper.user_certificate_path)
+            token = get_user_token_value(self.user)
+
             return self.nu.authenticate_with_refresh_token(token, cert_path)
         except NuException:
-            return self.authenticate_with_certificate()
+            return self.__authenticate_with_certificate()
 
     def get_account_balance(self):
         return self.nu.get_account_balance()
@@ -161,6 +136,3 @@ class NuBankWrapper:
         FileHelper.save_to_file(file_path, card_feed)
 
         return card_feed
-
-    def generate_cert(self, save_file=True):
-        cert_generator.run(self.user, self.password, save_file=save_file)

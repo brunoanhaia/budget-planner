@@ -3,13 +3,14 @@ import copy
 from abc import abstractmethod
 from datetime import date, datetime
 import inspect
+from typing import Any
 
 import pandas as pd
 from pygsheets.exceptions import PyGsheetsException, WorksheetNotFound
 from pygsheets.worksheet import Worksheet
 
-from wrapper.providers import *
-from wrapper.utils import FileHelper
+from ..providers import *
+from ..utils import FileHelper
 
 
 class Base:
@@ -29,7 +30,7 @@ class Base:
 
     @cpf.setter
     def cpf(self, value: str):
-        from wrapper.utils.file_helper import FileHelper
+        from ..utils.file_helper import FileHelper
 
         self.__cpf = value
         self.file_helper = FileHelper(value)

@@ -2,16 +2,20 @@ import pygsheets
 from pygsheets import Spreadsheet
 from pygsheets.exceptions import SpreadsheetNotFound, WorksheetNotFound
 from pygsheets.worksheet import Worksheet
+from decouple import config
+from pathlib import Path
+
+from ..utils.constants import Constants
 
 
 class DatabaseProvider:
     _instance = None
 
     def __init__(self) -> None:
-        # Todo: move credentials to environment variables
-        self.client = pygsheets.authorize(
-            service_account_file='cache/service_secret.json',
-            credentials_directory='cache')
+        cache_dir_path: Path = config(Constants.Wrapper.cache_dir_path, cast=Path)
+        service_account_file = cache_dir_path.joinpath('service_secret.json')
+
+        self.client = pygsheets.authorize(service_account_file=service_account_file, credentials_directory=cache_dir_path)
         self.__init_default_sheet()
 
     @classmethod

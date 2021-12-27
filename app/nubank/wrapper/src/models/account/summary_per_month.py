@@ -3,8 +3,8 @@ from datetime import date
 from pandas import DataFrame
 import pandas as pd
 
-from wrapper.models import *
-from wrapper.models.base_model import Base, BaseList, BaseModel
+from ...models import *
+from ...models.base_model import Base, BaseList, BaseModel
 
 
 class SummaryPerMonthList(BaseList):

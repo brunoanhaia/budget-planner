@@ -1,5 +1,5 @@
 from __future__ import annotations
-from wrapper.providers import *
+from ...providers import *
 
 
 class User:
