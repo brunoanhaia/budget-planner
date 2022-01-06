@@ -9,6 +9,7 @@ class Constants():
         level = 'LOG_LEVEL'
     
     class Wrapper():
+        standalone_run = 'STANDALONE_RUN'
         cache_dir_name = 'CACHE_DIR_NAME'
         cache_dir_path = 'CACHE_DIR_PATH'
         user_cache_dir_name = 'USER_CACHE_DIR_NAME'

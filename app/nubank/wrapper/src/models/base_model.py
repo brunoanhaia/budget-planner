@@ -66,12 +66,16 @@ class BaseList(Base):
                                 .get_worksheet(self.__sheet_name__)
 
             list_obj = getattr(self, get_data_method)()
-            df = pd.DataFrame \
-                .from_dict(list_obj)
+            df = pd.DataFrame.from_dict(list_obj)
 
             current_sheets_data = self.__get_sheets_data(current_cpf=False)
-            current_sheets_data = current_sheets_data.append(df,
-                                                             ignore_index=True)
+
+            # Workaround to prevent corrupted tables
+            if '' not  in current_sheets_data.columns:
+                current_sheets_data = current_sheets_data.append(df, ignore_index=True)
+            else:
+                current_sheets_data = df
+
 
             worksheet.clear()
             worksheet.set_dataframe(current_sheets_data, start='A1', fit=True)
@@ -82,10 +86,9 @@ class BaseList(Base):
             return False
 
     def __get_sheets_data(self, current_cpf: bool = True):
-        worksheet: Worksheet = self.db_helper \
-                               .get_worksheet(self.__sheet_name__)
+        worksheet: Worksheet = self.db_helper.get_worksheet(self.__sheet_name__)
 
-        df = worksheet.get_as_df()
+        df = worksheet.get_as_df(include_tailing_empty=False)
 
         if 'cpf' not in df:
             return df

@@ -9,7 +9,7 @@ def parse_args():
     return args
 
 def get_data(user: str):
-    from src.nubank import NuBankWrapper
+    from .src.nubank import NuBankWrapper
     nu = NuBankWrapper(user)
     nu.authenticate_with_token_string()
     nu.account_sync()

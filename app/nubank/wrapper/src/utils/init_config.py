@@ -8,10 +8,13 @@ from .constants import Constants
 from .user import init_user
 
 def init_config(user: str):
-    config_logging()
-    config_keyring()
-    config_cache_dir()
-    init_user(user)
+    try:
+        config_logging()
+        config_keyring()
+        config_cache_dir()
+        init_user(user)
+    except Exception as ex:
+        raise Exception(f'init_config failed for user: {user}. Error: {ex}')
 
 def config_keyring():
     # Keyring config
