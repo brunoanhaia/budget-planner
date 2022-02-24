@@ -64,7 +64,7 @@ class SummaryPerMonthList(BaseList):
         return [item.to_dict() for item in self.__list]
 
     def get_file_path(self):
-        return self.file_helper.account_monthly_summary.path
+        return self.file_helper.account_monthly_summary._path
 
 
 class SummaryPerMonth(BaseModel):

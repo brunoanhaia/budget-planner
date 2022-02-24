@@ -4,8 +4,8 @@ import os
 from decouple import config
 from keyrings.cryptfile.cryptfile import CryptFileKeyring
 from pathlib import Path
-from .constants import Constants
-from .user import init_user
+from wrapper.src.utils.constants import Constants
+from wrapper.src.utils.user import init_user
 
 def init_config(user: str):
     try:
@@ -33,7 +33,7 @@ def config_logging():
     logging.debug('Logging configured successfully')
 
 def config_cache_dir():
-    wrapper_root_dir = Path(__file__).resolve().parent.parent.parent
+    wrapper_root_dir = Path(__file__).resolve().parent.parent.parent.absolute()
     cache_dir_path = wrapper_root_dir.joinpath(config(Constants.Wrapper.cache_dir_name))
     os.environ[Constants.Wrapper.cache_dir_path] = str(cache_dir_path)
 

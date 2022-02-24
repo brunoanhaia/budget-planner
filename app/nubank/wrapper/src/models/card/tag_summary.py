@@ -44,7 +44,7 @@ class TagSummaryList(BaseList):
     def save_file(self):
         # Save amount per tag in a file
         self.file_helper.save_to_file(
-            self.file_helper.card_bill_amount_per_tag.path, self.__list)
+            self.file_helper.card_bill_amount_per_tag._path, self.__list)
 
 
 class TagSummary(BaseModel):

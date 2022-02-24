@@ -1,10 +1,9 @@
 import json
 import os
-
 from pynubank.exception import NuException
 
-from .utils import FileHelper, Constants, init_config
-from .utils.user import get_user_password, set_user_token_value, get_user_token_value
+from src.utils import FileHelper, Constants, init_config
+from src.utils.user import get_user_password, set_user_token_value, get_user_token_value
 from decouple import config
 
 class NuBankWrapper:
@@ -18,7 +17,7 @@ class NuBankWrapper:
 
         self.mock = mock
         self.user: str = user
-        self.file_helper = FileHelper(self.user)
+        self.file_helper = FileHelper()
         self.data_dir = data_dir
 
         self.nu = NuBankApiProvider.instance().nu
@@ -32,8 +31,6 @@ class NuBankWrapper:
     def user(self, value: str):
         if self.cache.data.user is None:
             self.cache.data.user = value
-
-        self.file_helper = FileHelper(value)
 
     @property
     def nickname(self):
@@ -88,8 +85,8 @@ class NuBankWrapper:
 
     # Todo: Move to base class
     def retrieve_card_bill_from_cache(self) -> list[dict]:
-        base_path = self.file_helper.card_bill.path
-        files_list = self.file_helper.card_bill.files
+        base_path = self.file_helper.card_bill._path
+        files_list = self.file_helper.card_bill._files
         card_bills_list = []
 
         for file in files_list:
@@ -124,7 +121,7 @@ class NuBankWrapper:
 
         # Storing the data in the class instance for future use
         self.cache.data.card.statements = card_statements
-        file_path = self.file_helper.card_statements.path
+        file_path = self.file_helper.card_statements._path
         FileHelper.save_to_file(file_path, card_statements)
 
         return card_statements
@@ -132,7 +129,7 @@ class NuBankWrapper:
     def get_card_feed(self):
         card_feed = self.nu.get_card_feed()
 
-        file_path = self.file_helper.card_feed.path
+        file_path = self.file_helper.card_feed._path
         FileHelper.save_to_file(file_path, card_feed)
 
         return card_feed

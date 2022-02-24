@@ -1,4 +1,4 @@
-from .wrapper.entrypoint import get_data
+from .entrypoint import get_data
 
 def get_nubank_data(userList):
     users = userList.split(',')

@@ -1,4 +1,8 @@
 import argparse
+import sys
+sys.path.append(".")
+
+from nubank.wrapper import NuBankWrapper
 
 def parse_args():
     # Argument parsing
@@ -9,7 +13,6 @@ def parse_args():
     return args
 
 def get_data(user: str):
-    from .src.nubank import NuBankWrapper
     nu = NuBankWrapper(user)
     nu.authenticate_with_token_string()
     nu.account_sync()

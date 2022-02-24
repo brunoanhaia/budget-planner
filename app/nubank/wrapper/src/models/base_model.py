@@ -18,7 +18,7 @@ class Base:
     def __init__(self, cpf: str) -> None:
 
         self.cache_data = CacheDataProvider.instance()
-        self.file_helper = FileHelper(cpf)
+        self.file_helper = FileHelper()
         self.db_helper = DatabaseProvider.instance()
         self.nu = NuBankApiProvider.instance().nu
         self.__cpf = ''
@@ -30,10 +30,7 @@ class Base:
 
     @cpf.setter
     def cpf(self, value: str):
-        from ..utils.file_helper import FileHelper
-
         self.__cpf = value
-        self.file_helper = FileHelper(value)
 
 
 class BaseList(Base):
