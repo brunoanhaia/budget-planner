@@ -38,7 +38,7 @@ def __config_user(user: str):
     # Config user
     user_key  = __get_user_key(user)
     credential_exists = keyring.get_credential(user_key, 'id') != None
-    is_standalone_run = config(Constants.Wrapper.standalone_run)
+    is_standalone_run = config(Constants.Wrapper.standalone_run, cast=bool)
 
     if  is_standalone_run and not credential_exists:
         raise Exception(f'Please run the script without the standalone flag and config the user : {user}')

@@ -1,8 +1,5 @@
 import argparse
-import sys
-sys.path.append(".")
-
-from nubank.wrapper import NuBankWrapper
+from wrapper import NuBankWrapper
 
 def parse_args():
     # Argument parsing

@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from decouple import config
-from wrapper.src.utils.constants import Constants
+from .constants import Constants
 
 @dataclass()
 class WrapperFilePath:

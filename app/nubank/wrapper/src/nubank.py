@@ -2,8 +2,8 @@ import json
 import os
 from pynubank.exception import NuException
 
-from src.utils import FileHelper, Constants, init_config
-from src.utils.user import get_user_password, set_user_token_value, get_user_token_value
+from .utils import FileHelper, Constants, init_config
+from .utils.user import get_user_password, set_user_token_value, get_user_token_value
 from decouple import config
 
 class NuBankWrapper:

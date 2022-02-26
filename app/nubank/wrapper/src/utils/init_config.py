@@ -4,8 +4,8 @@ import os
 from decouple import config
 from keyrings.cryptfile.cryptfile import CryptFileKeyring
 from pathlib import Path
-from wrapper.src.utils.constants import Constants
-from wrapper.src.utils.user import init_user
+from .constants import Constants
+from .user import init_user
 
 def init_config(user: str):
     try:
