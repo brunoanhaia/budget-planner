@@ -2,7 +2,7 @@ class CacheDataProvider:
     _instance = None
 
     def __init__(self) -> None:
-        from wrapper.models import UserDataCache
+        from ..models import UserDataCache
         self.data: UserDataCache = object()
 
     @classmethod
@@ -12,5 +12,5 @@ class CacheDataProvider:
         return cls._instance
 
     def set_data(self, cpf):
-        from wrapper.models import UserDataCache
+        from ..models import UserDataCache
         self.data = UserDataCache(cpf)

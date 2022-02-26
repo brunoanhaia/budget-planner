@@ -3,13 +3,14 @@ import copy
 from abc import abstractmethod
 from datetime import date, datetime
 import inspect
+from typing import Any
 
 import pandas as pd
 from pygsheets.exceptions import PyGsheetsException, WorksheetNotFound
 from pygsheets.worksheet import Worksheet
 
-from wrapper.providers import *
-from wrapper.utils import FileHelper
+from ..providers import *
+from ..utils import FileHelper
 
 
 class Base:
@@ -17,7 +18,7 @@ class Base:
     def __init__(self, cpf: str) -> None:
 
         self.cache_data = CacheDataProvider.instance()
-        self.file_helper = FileHelper(cpf)
+        self.file_helper = FileHelper()
         self.db_helper = DatabaseProvider.instance()
         self.nu = NuBankApiProvider.instance().nu
         self.__cpf = ''
@@ -29,10 +30,7 @@ class Base:
 
     @cpf.setter
     def cpf(self, value: str):
-        from wrapper.utils.file_helper import FileHelper
-
         self.__cpf = value
-        self.file_helper = FileHelper(value)
 
 
 class BaseList(Base):
@@ -65,12 +63,16 @@ class BaseList(Base):
                                 .get_worksheet(self.__sheet_name__)
 
             list_obj = getattr(self, get_data_method)()
-            df = pd.DataFrame \
-                .from_dict(list_obj)
+            df = pd.DataFrame.from_dict(list_obj)
 
             current_sheets_data = self.__get_sheets_data(current_cpf=False)
-            current_sheets_data = current_sheets_data.append(df,
-                                                             ignore_index=True)
+
+            # Workaround to prevent corrupted tables
+            if '' not  in current_sheets_data.columns:
+                current_sheets_data = current_sheets_data.append(df, ignore_index=True)
+            else:
+                current_sheets_data = df
+
 
             worksheet.clear()
             worksheet.set_dataframe(current_sheets_data, start='A1', fit=True)
@@ -81,10 +83,9 @@ class BaseList(Base):
             return False
 
     def __get_sheets_data(self, current_cpf: bool = True):
-        worksheet: Worksheet = self.db_helper \
-                               .get_worksheet(self.__sheet_name__)
+        worksheet: Worksheet = self.db_helper.get_worksheet(self.__sheet_name__)
 
-        df = worksheet.get_as_df()
+        df = worksheet.get_as_df(include_tailing_empty=False)
 
         if 'cpf' not in df:
             return df

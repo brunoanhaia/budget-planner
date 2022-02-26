@@ -1,7 +1,7 @@
 from datetime import date
 
-from wrapper.utils.file_helper import FileHelper
-from wrapper.models.base_model import BaseList, BaseModel
+from ...utils.file_helper import FileHelper
+from ...models.base_model import BaseList, BaseModel
 
 
 class Transaction(BaseModel):
@@ -59,7 +59,6 @@ class TransactionsList(BaseList):
     def __init__(self, cpf):
         super().__init__(cpf)
         self.__list: list[Transaction] = []
-        self.__file_helper = FileHelper(cpf)
 
     def __getitem__(self, index):
         return self.__list[index]
@@ -113,7 +112,7 @@ class TransactionsList(BaseList):
         self.__list = transactions_dict_obj
 
     def get_file_path(self):
-        file_path = self.__file_helper.account_statement.path
+        file_path = self.file_helper.account_statement._path
 
         return file_path
 

@@ -1,10 +1,11 @@
-import os
 import random
 import string
-from getpass import getpass
+from decouple import config
 
 from pynubank import NuException
 from pynubank.utils.certificate_generator import CertificateGenerator
+
+from .constants import Constants
 
 def generate_random_id() -> str:
     return ''.join(random.choices(string.ascii_lowercase + string.digits, k=12))
@@ -14,13 +15,14 @@ def log(message):
     print(f'[*] {message}')
 
 
-def save_cert(cert, name, passphrase = None):
-    path = os.path.join(os.getcwd(), name)
+def save_cert(cert):
+    path = config(Constants.Wrapper.user_cache_dir_path, cast=str)
+    
     with open(path, 'wb') as cert_file:
         cert_file.write(cert.export())
 
 
-def run(cpf: string, password: string, save_file):
+def run(cpf: str, password: str):
     log(f'Starting PyNubank context creation.')
 
     device_id = generate_random_id()
@@ -41,8 +43,7 @@ def run(cpf: string, password: string, save_file):
 
     cert1, cert2 = generator.exchange_certs(code)
 
-    if save_file:
-        save_cert(cert1, f'{cpf}_cert.p12')
+    save_cert(cert1)
 
     print(f'Certificates generated successfully.')
     print(f'Warning, keep these certificates safe (Do not share or version in git)')

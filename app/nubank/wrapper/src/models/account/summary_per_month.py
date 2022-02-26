@@ -3,8 +3,8 @@ from datetime import date
 from pandas import DataFrame
 import pandas as pd
 
-from wrapper.models import *
-from wrapper.models.base_model import Base, BaseList, BaseModel
+from ...models import *
+from ...models.base_model import Base, BaseList, BaseModel
 
 
 class SummaryPerMonthList(BaseList):
@@ -64,7 +64,7 @@ class SummaryPerMonthList(BaseList):
         return [item.to_dict() for item in self.__list]
 
     def get_file_path(self):
-        return self.file_helper.account_monthly_summary.path
+        return self.file_helper.account_monthly_summary._path
 
 
 class SummaryPerMonth(BaseModel):

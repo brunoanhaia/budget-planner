@@ -9,7 +9,7 @@ class StatementList(BaseList):
         self.__list: list[Statement] = []
 
     def save_file(self):
-        file_path = self.file_helper.card_statements.path
+        file_path = self.file_helper.card_statements._path
         self.file_helper.save_to_file(file_path, self.__list)
 
     def get_data(self):

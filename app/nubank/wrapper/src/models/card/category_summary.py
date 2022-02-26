@@ -43,7 +43,7 @@ class CategorySummaryList(BaseList):
     def save_file(self):
         # Save amount per category in a file
         self.file_helper.save_to_file(
-            self.file_helper.card_bill_amount_per_category.path, self.__list)
+            self.file_helper.card_bill_amount_per_category._path, self.__list)
 
 
 class CategorySummary(BaseModel):

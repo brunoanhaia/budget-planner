@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, datetime
 
 from ..base_model import BaseModel, BaseList
-from wrapper.utils import planify_array
+from utils import planify_array
 from .tag_summary import TagSummary
 from .category_summary import CategorySummary
 from .bill import NuBankCardBill
