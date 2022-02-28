@@ -49,6 +49,10 @@ class StatementList(BaseList):
 
     def get_list(self):
         return self.__list
+    
+    def load_data(self):
+        file_path = self.file_helper.card_statements.get_complete_path()
+        self.__list = self.file_helper.read_from_file(file_path)
 
     def __getitem__(self, index):
         return self.__list[index]

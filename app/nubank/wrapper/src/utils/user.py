@@ -44,7 +44,7 @@ def __config_user(user: str):
         raise Exception(f'Please run the script without the standalone flag and config the user : {user}')
 
     option = 'N'
-    if credential_exists: 
+    if not is_standalone_run and credential_exists: 
         option = input(f'The user {user} in key {user_key} already exist, do you want to replace? [Y/N]: ')
 
     if option == 'Y' or not credential_exists:

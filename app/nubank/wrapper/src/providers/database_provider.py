@@ -5,7 +5,7 @@ from pygsheets.worksheet import Worksheet
 from decouple import config
 from pathlib import Path
 
-from ..utils.constants import Constants
+from utils.constants import Constants
 
 
 class DatabaseProvider:

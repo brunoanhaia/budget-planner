@@ -1,7 +1,7 @@
 from datetime import date
 
-from ...utils.file_helper import FileHelper
-from ...models.base_model import BaseList, BaseModel
+from utils.file_helper import FileHelper
+from models.base_model import BaseList, BaseModel
 
 
 class Transaction(BaseModel):
@@ -77,6 +77,11 @@ class TransactionsList(BaseList):
             self.__fill_from_transactions(raw_account_transactions)
 
         return [item.to_dict() for item in self.__list]
+    
+    def load_data(self):
+        account_statement_path = self.file_helper.account_statement.get_complete_path()
+        list_of_dicts = self.file_helper.read_from_file(account_statement_path)
+        self.__list = [Transaction(self.cpf).from_dict(item) for item in list_of_dicts]
 
     def __parse_pix_transactions(self, transactions: list[Transaction]):
         pix_trasactions_type_list = {

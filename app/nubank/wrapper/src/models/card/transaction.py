@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 
-from ..base_model import BaseModel, BaseList
+from base_model import BaseModel, BaseList
 from utils import planify_array
 from .tag_summary import TagSummary
 from .category_summary import CategorySummary
@@ -30,6 +30,17 @@ class TransactionBillList(BaseList):
             self.__list = transactions_list_obj
 
         return self.get_list()
+
+    def load_data(self):
+        files_list = self.file_helper.card_bill_transactions.files
+        card_bills_list = []
+
+        for file in files_list:
+            file_content = self.file_helper.read_from_file(file)
+
+            card_bills_list.append(file_content)
+
+        self.__list = card_bills_list
 
     def __get_transactions(self, bill: NuBankCardBill):
         raw_details = self.nu._client.get(bill.link_href)['bill']

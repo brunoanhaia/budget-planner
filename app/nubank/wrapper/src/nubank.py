@@ -2,14 +2,14 @@ import json
 import os
 from pynubank.exception import NuException
 
-from .utils import FileHelper, Constants, init_config
-from .utils.user import get_user_password, set_user_token_value, get_user_token_value
+from utils import FileHelper, Constants, init_config
+from utils.user import get_user_password, set_user_token_value, get_user_token_value
+from providers import NuBankApiProvider, CacheDataProvider
 from decouple import config
 
 class NuBankWrapper:
 
     def __init__(self, user: str, mock: bool = True, data_dir: str = 'cache'):
-        from .providers import NuBankApiProvider, CacheDataProvider
         init_config(user)
 
         self.cache = CacheDataProvider.instance()
@@ -72,34 +72,9 @@ class NuBankWrapper:
     def card_sync(self):
         self.cache.data.card.sync()
 
-    # Todo: Move to base class
-    def retrieve_from_cache(self, type: None) -> list[dict]:
-        file_path = getattr(self.file_helper, type.value).get_complete_path()
-
-        with open(file_path, 'r', encoding='utf8') as f:
-            file_content = json.load(f)
-
-            self.cache[type.value] = file_content
-
-            return file_content
-
-    # Todo: Move to base class
-    def retrieve_card_bill_from_cache(self) -> list[dict]:
-        base_path = self.file_helper.card_bill._path
-        files_list = self.file_helper.card_bill._files
-        card_bills_list = []
-
-        for file in files_list:
-            with open(os.path.join(base_path, file), 'r',
-                      encoding='utf8') as f:
-
-                file_content = json.load(f)
-
-                card_bills_list.append(file_content)
-
-        self.cache.data.card.bills = card_bills_list
-
-        return self.cache.data.card.bills
+    def get_cache_data(self):
+        self.cache.data.account.load_cache()
+        self.cache.data.card.load_cache()
 
     def get_card_statements(self):
         card_statements = self.nu.get_card_statements()

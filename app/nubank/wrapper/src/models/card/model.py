@@ -19,6 +19,13 @@ class Card(BaseModel):
         self.__save_file()
         self.__set_sheets_data()
 
+    def load_cache(self):
+        self.statements.load_data()
+        self.bills.load_data()
+        self.transaction_list.load_data()
+        self.tag_summary.load_data()
+        self.category_summary.load_data()
+
     def __get_data(self):
         self.statements.get_data()
         self.bills.get_data()

@@ -1,5 +1,5 @@
 from __future__ import annotations
-from ...providers import *
+from providers import DatabaseProvider
 
 
 class User:

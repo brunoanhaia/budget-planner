@@ -1,9 +1,10 @@
+import json
 from pygsheets import FormatType
 from pygsheets.cell import Cell
 from pygsheets.worksheet import Worksheet
 
 from . import *
-from ..base_model import BaseModel
+from models.base_model import BaseModel
 
 
 class Account(BaseModel):
@@ -12,6 +13,11 @@ class Account(BaseModel):
         super().__init__(cpf)
         self.transactions_list: TransactionsList = TransactionsList(self.cpf)
         self.summary_list: SummaryPerMonthList = SummaryPerMonthList(self.cpf)
+    
+    def load_cache(self):
+        self.transactions_list.load_data()
+        self.summary_list.load_data()
+
 
     def sync(self):
         self.__get_data()

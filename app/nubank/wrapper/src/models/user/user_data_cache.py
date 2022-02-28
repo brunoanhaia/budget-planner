@@ -1,5 +1,5 @@
-from ..card import *
-from ..account import *
+from ..card import Card
+from ..account import Account
 
 
 class UserDataCache:

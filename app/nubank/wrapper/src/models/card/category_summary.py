@@ -14,6 +14,10 @@ class CategorySummaryList(BaseList):
     def get_file_path(self):
         pass
 
+    def load_data(self):
+        file_path = self.file_helper.card_bill_amount_per_category.get_complete_path()
+        self.__list = self.file_helper.read_from_file(file_path)
+
     def get_list(self):
         return [item.to_dict() for item in self.__list]
 

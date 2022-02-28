@@ -17,6 +17,10 @@ class TagSummaryList(BaseList):
 
     def get_list(self):
         return [item.to_dict() for item in self.__list]
+    
+    def load_data(self):
+        file_path = self.file_helper.card_bill_amount_per_tag.get_complete_path()
+        self.__list = self.file_helper.read_from_file(file_path)
 
     def __getitem__(self, index):
         return self.__list[index]

@@ -3,8 +3,8 @@ from datetime import date
 from pandas import DataFrame
 import pandas as pd
 
-from ...models import *
-from ...models.base_model import Base, BaseList, BaseModel
+from models import *
+from models.base_model import Base, BaseList, BaseModel
 
 
 class SummaryPerMonthList(BaseList):
@@ -18,6 +18,11 @@ class SummaryPerMonthList(BaseList):
         self.__generate()
 
         return self.get_list()
+
+    def load_data(self):
+        file_path = self.file_helper.account_monthly_summary.get_complete_path()
+        list_of_dicts =  self.file_helper.read_from_file(file_path)
+        self.__list = [SummaryPerMonth(self.cpf).from_dict(item) for item in list_of_dicts]
 
     def __generate(self) -> None:
         values = self.cache_data.data.account.transactions_list

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+import os
 
 from . import *
 from ..base_model import BaseModel, BaseList
@@ -41,6 +42,16 @@ class BillList(BaseList):
             self.__list = bills
 
         return self.get_list()
+
+    def load_data(self):
+        files_list = self.file_helper.card_bill.files
+        card_bills_list = []
+
+        for file in files_list:
+            file_content = self.file_helper.read_from_file(file)
+            card_bills_list.append(file_content)
+
+        self.__list = card_bills_list
 
     def __getitem__(self, index):
         return self.__list[index]
@@ -83,6 +94,9 @@ class NuBankCardBill(BaseModel):
     @property
     def ref_date(self):
         return self.__ref_date
+    
+    def ref_date(self, value):
+        self.__ref_date = value
 
     @property
     def past_balance(self):

@@ -9,8 +9,8 @@ import pandas as pd
 from pygsheets.exceptions import PyGsheetsException, WorksheetNotFound
 from pygsheets.worksheet import Worksheet
 
-from ..providers import *
-from ..utils import FileHelper
+from providers import *
+from utils import FileHelper
 
 
 class Base:

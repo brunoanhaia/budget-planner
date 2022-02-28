@@ -12,7 +12,7 @@ class WrapperFilePath:
         self._path: Path = path
         self._extension: str = extension
         self._is_folder: bool = is_folder
-        self._files = self._get_files()
+        self.files = self._get_files()
 
     def _get_files(self) -> list[str]:
         if self._is_folder and self._path.exists():
@@ -55,6 +55,13 @@ class FileHelper:
         with open(dir_path.joinpath(file_name).absolute(), 'w+', encoding='utf-8') as outfile:
             json.dump(content, outfile, ensure_ascii=False, indent='\t', default=lambda x: x.to_dict())
             print(f'Saved to {file_path}')
+
+    @staticmethod
+    def read_from_file(file_path):
+        with open(file_path, 'r', encoding='utf8') as f:
+            file_content = json.load(f)
+
+            return file_content
 
     def __from_base_dir(self, path: str):
         return self.__user_cache_dir_path.joinpath(path)
