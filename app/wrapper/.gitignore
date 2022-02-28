@@ -3,3 +3,4 @@
 **.ini
 **/src/build
 **/dist
+**/*.egg-info*

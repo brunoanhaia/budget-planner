@@ -3,7 +3,7 @@
 #  This template allows you to validate your python code.
 #  The workflow allows running tests and code linting on the default branch.
 
-image: python:3.8
+image: python:3.10
 
 pipelines:
   default:
@@ -16,11 +16,34 @@ pipelines:
         script:
           - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
     - step:
+        name: Build package
+        runs-on: 
+          - 'self.hosted'
+        caches:
+          - pip
+        script:
+          - pip install build
+          - pip install -r requirements.txt
+          - cd app/wrapper
+          - pwd
+          - python -m build
+          - find . | sed -e "s/[^-][^\/]*\// |/g" -e "s/|\([^ ]\)/|-\1/"
+        artifacts: # defining the artifacts to be passed to each future step.
+          - app/wrapper/dist/**
+    - step:
         name: Build .exe
         runs-on: 
           - 'self.hosted'
+        artifacts: # defining the artifacts to be passed to each future step.
+          download: true
+        caches:
+          - pip
         script:
-          - cd app/nubank/wrapper/src
+          - pip install -r requirements.txt
+          - find . | sed -e "s/[^-][^\/]*\// |/g" -e "s/|\([^ ]\)/|-\1/"
+          - for i in $(ls app/wrapper/dist/*.whl); do pip install "$i"; done;
+          - cd app/wrapper/pynubank_wrapper
           - pwd
-          - pip install pyinstaller
-          - pyinstaller pyinstaller entrypoint.py --collect-all wrapper --collect-all pynubank
+          - pyinstaller entrypoint.py --collect-all pynubank_wrapper --collect-all pynubank
+        artifacts: # defining the artifacts to be passed to each future step.
+          - app/wrapper/pynubank_wrapper/dist/**
