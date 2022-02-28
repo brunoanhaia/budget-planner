@@ -1,0 +1,26 @@
+#  Template python-build
+
+#  This template allows you to validate your python code.
+#  The workflow allows running tests and code linting on the default branch.
+
+image: python:3.8
+
+pipelines:
+  default:
+    - step:
+        name: Install Dependencies
+        runs-on: 
+          - 'self.hosted'
+        caches:
+          - pip
+        script:
+          - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - step:
+        name: Build .exe
+        runs-on: 
+          - 'self.hosted'
+        script:
+          - cd app/nubank/wrapper/src
+          - pwd
+          - pip install pyinstaller
+          - pyinstaller pyinstaller entrypoint.py --collect-all wrapper --collect-all pynubank
