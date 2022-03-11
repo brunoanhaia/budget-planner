@@ -10,6 +10,7 @@ class Constants():
     
     class Wrapper():
         standalone_run = 'STANDALONE_RUN'
+        use_localappdata = 'USE_LOCAL_APP_DATA' 
         cache_dir_name = 'CACHE_DIR_NAME'
         cache_dir_path = 'CACHE_DIR_PATH'
         user_cache_dir_name = 'USER_CACHE_DIR_NAME'

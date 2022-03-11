@@ -1,7 +1,7 @@
 import keyring
 import logging
 import os
-from decouple import config
+from decouple import config, AutoConfig
 from keyrings.cryptfile.cryptfile import CryptFileKeyring
 from pathlib import Path
 from .constants import Constants
@@ -25,15 +25,27 @@ def config_keyring():
 def config_logging():
     # Config Logging
     try:
-        log_level = getattr(logging, config(Constants.Log.level, cast=str))
+        config_logging_level = config(Constants.Log.level)
+
+        if config_logging_level in logging._nameToLevel.keys():
+            log_level = getattr(logging, config_logging_level)
+        else:
+            log_level = logging.DEBUG
+
         logging.basicConfig(encoding='utf-8', level=log_level)
-    except:
-        raise Exception("Could not configure logging")
+    except Exception as ex:
+        raise Exception(f'Could not configure logging. Error: {str(ex)}')
     
     logging.debug('Logging configured successfully')
 
 def config_cache_dir():
-    wrapper_root_dir = Path(__file__).resolve().parent.parent.parent.absolute()
+    use_localappdata = config(Constants.Wrapper.use_localappdata, cast=bool)
+
+    if use_localappdata:
+        wrapper_root_dir = Path(os.getenv('LOCALAPPDATA')).joinpath('pynubank_wrapper')
+    else:
+        wrapper_root_dir = Path(__file__).resolve().parent.parent.parent.absolute()
+    
     cache_dir_path = wrapper_root_dir.joinpath(config(Constants.Wrapper.cache_dir_name))
     os.environ[Constants.Wrapper.cache_dir_path] = str(cache_dir_path)
 

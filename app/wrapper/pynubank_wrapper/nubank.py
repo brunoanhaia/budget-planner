@@ -1,5 +1,3 @@
-import json
-import os
 from pynubank.exception import NuException
 
 from utils import FileHelper, Constants, init_config

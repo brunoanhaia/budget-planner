@@ -3,7 +3,7 @@ import pathlib
 import sys
 sys.path.append(str(pathlib.Path(__file__).parent.absolute()))
 
-from nubank import NuBankWrapper
+from pynubank_wrapper import NuBankWrapper
 
 
 def parse_args():
@@ -11,7 +11,6 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--user', metavar='user', type=str, default='')
     parser.add_argument('--cache', metavar='cache', type=bool, default=False)
-
 
     args, remaining = parser.parse_known_args()
     return args
