@@ -17,10 +17,15 @@ python -m pip install -r requirements.txt
 python main.py
 ```
 
+## Build package for install
+```bat
+python -m build
+```
+
 ## Generating Wrapper exe
 Go to the wrapper root folder and execute:
 ```bat
-pyinstaller entrypoint.py --collect-all wrapper --collect-all pynubank
+pyinstaller entrypoint.py --collect-all pynubank_wrapper --collect-all pynubank
 ```
 <b>Remarks</b>: Don't forget to add the cache folder to it. If you want to build the one file exe, please use `--onefile`.
 
